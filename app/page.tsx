@@ -1,6 +1,7 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { signIn, signOut, useSession } from 'next-auth/react';
+import { useEffect, useMemo, useState } from 'react';
 
 type ThemeKey = 'ocean' | 'sunset' | 'forest' | 'amber';
 type CardMode = 'dark' | 'light';
@@ -39,6 +40,7 @@ function parseProjectRows(input: string): ProjectRow[] {
 }
 
 export default function Home() {
+  const { data: session, status } = useSession();
   const [cardMode, setCardMode] = useState<CardMode>('dark');
   const [name, setName] = useState('Minty Kim');
   const [role, setRole] = useState('Frontend Engineer');
@@ -66,6 +68,14 @@ export default function Home() {
   const [downloadingFormat, setDownloadingFormat] = useState<'svg' | 'png' | null>(null);
   const [copiedReadme, setCopiedReadme] = useState(false);
   const [previewFailed, setPreviewFailed] = useState(false);
+  const [profileMenuOpen, setProfileMenuOpen] = useState(false);
+
+  useEffect(() => {
+    if (!session?.user?.username) return;
+    if (!githubUsername.trim() || githubUsername === 'mintydev') {
+      setGithubUsername(session.user.username);
+    }
+  }, [githubUsername, session?.user?.username]);
 
   const cardPath = useMemo(() => {
     const params = new URLSearchParams({
@@ -253,12 +263,84 @@ export default function Home() {
 
   const isCardLight = cardMode === 'light';
   const projectTone = PROJECT_THEME_TONE[theme];
+  const isAuthenticated = status === 'authenticated';
+  const displayName = session?.user?.name || session?.user?.username || 'GitHub User';
+  const avatarUrl = session?.user?.image || '';
+  const avatarInitial = (displayName || 'U').trim().charAt(0).toUpperCase();
+
+  useEffect(() => {
+    if (!isAuthenticated) {
+      setProfileMenuOpen(false);
+    }
+  }, [isAuthenticated]);
 
   const inputClass = 'rounded-xl border border-white/15 bg-slate-900/60 px-4 py-3 outline-none ring-cyan-300/50 transition focus:ring';
 
   return (
     <main className="min-h-screen w-full bg-[radial-gradient(circle_at_20%_15%,#164e63_0%,#020617_45%,#020617_100%)] px-4 py-4 text-slate-100 md:px-6 md:py-6">
-      <div className="mx-auto grid min-h-[calc(100vh-2rem)] w-full max-w-[1500px] gap-4 md:min-h-[calc(100vh-3rem)] md:gap-6 lg:grid-cols-[0.9fr_1.1fr]">
+      <header className="relative z-50 mx-auto mb-4 flex w-full max-w-[1500px] items-center justify-between rounded-2xl border border-white/10 bg-white/5 px-4 py-3 backdrop-blur-lg md:mb-6 md:px-5">
+        <div className="flex items-center gap-3">
+          <svg width="38" height="38" viewBox="0 0 38 38" xmlns="http://www.w3.org/2000/svg" aria-label="RuMe logo">
+            <defs>
+              <linearGradient id="rumeLogoGrad" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0%" stopColor="#22D3EE" />
+                <stop offset="55%" stopColor="#38BDF8" />
+                <stop offset="100%" stopColor="#2563EB" />
+              </linearGradient>
+              <radialGradient id="rumeGlow" cx="50%" cy="20%" r="70%">
+                <stop offset="0%" stopColor="#FFFFFF" stopOpacity="0.55" />
+                <stop offset="100%" stopColor="#FFFFFF" stopOpacity="0" />
+              </radialGradient>
+            </defs>
+            <rect x="1" y="1" width="36" height="36" rx="12" fill="url(#rumeLogoGrad)" />
+            <rect x="1" y="1" width="36" height="36" rx="12" fill="url(#rumeGlow)" />
+            <path d="M10 27V11h5.7c3.6 0 5.6 1.8 5.6 4.8 0 2-1 3.4-2.8 4.2l3.4 7h-3.8l-2.9-6.1H13V27h-3Zm3-8.8h2.3c1.8 0 2.8-.8 2.8-2.2 0-1.5-1-2.3-2.8-2.3H13v4.5Z" fill="#F8FAFC" />
+            <circle cx="28.5" cy="9.5" r="2.2" fill="#E0F2FE" opacity="0.95" />
+          </svg>
+          <p className="text-xl font-semibold tracking-[0.02em] text-slate-100 md:text-2xl">RuMe</p>
+        </div>
+        <div className="relative">
+          {isAuthenticated ? (
+            <>
+              <button
+                type="button"
+                onClick={() => setProfileMenuOpen((prev) => !prev)}
+                className="h-11 w-11 overflow-hidden rounded-full border border-white/30 bg-slate-900/70 shadow-lg"
+                aria-label="Open profile menu"
+              >
+                {avatarUrl ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={avatarUrl} alt={`${displayName} avatar`} className="h-full w-full object-cover" />
+                ) : (
+                  <span className="flex h-full w-full items-center justify-center text-sm font-bold text-cyan-100">{avatarInitial}</span>
+                )}
+              </button>
+              {profileMenuOpen ? (
+                <div className="fixed right-4 top-16 z-[9999] w-52 rounded-xl border border-white/20 bg-slate-950/90 p-2 shadow-xl backdrop-blur-md md:right-6 md:top-20">
+                  <p className="px-2 py-1 text-xs text-slate-300">{displayName}</p>
+                  <button
+                    type="button"
+                    onClick={() => signOut({ callbackUrl: '/' })}
+                    className="mt-1 w-full rounded-lg px-3 py-2 text-left text-sm text-rose-200 transition hover:bg-rose-400/10"
+                  >
+                    로그아웃
+                  </button>
+                </div>
+              ) : null}
+            </>
+          ) : (
+            <button
+              type="button"
+              onClick={() => signIn('github')}
+              className="rounded-lg bg-cyan-300 px-3 py-1.5 text-sm font-semibold text-slate-950 transition hover:bg-cyan-200"
+            >
+              GitHub 로그인
+            </button>
+          )}
+        </div>
+      </header>
+
+      <div className="mx-auto grid w-full max-w-[1500px] gap-4 md:gap-6 lg:grid-cols-[0.9fr_1.1fr]">
         <section className="min-w-0 h-full rounded-3xl border border-white/10 bg-white/5 p-6 backdrop-blur-lg md:p-7">
           <p className="mb-3 inline-flex rounded-full border border-cyan-300/35 bg-cyan-300/10 px-3 py-1 text-xs tracking-[0.18em] text-cyan-200 uppercase">
             README STYLER
