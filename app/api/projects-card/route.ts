@@ -18,6 +18,8 @@ type ProjectRow = {
   description: string;
   period: string;
   stack: string;
+  repoLink: string;
+  siteLink: string;
 };
 
 const THEMES: Record<string, { darkStart: string; darkEnd: string; accent: string; lightStart: string; lightEnd: string }> = {
@@ -33,10 +35,38 @@ function parseProjects(input: string): ProjectRow[] {
     .map((line) => line.trim())
     .filter(Boolean)
     .map((line) => {
-      const [name = '-', description = '-', period = '-', stack = '-'] = line.split('|').map((part) => clampText(part, 64));
-      return { name, description, period, stack };
+      const [name = '-', description = '-', period = '-', stack = '-', rawRepoLink = '', rawSiteLink = ''] = line.split('|').map((part) => clampText(part, 120));
+      const links = normalizeProjectLinks(rawRepoLink, rawSiteLink);
+      return {
+        name: clampText(name, 64),
+        description: clampText(description, 64),
+        period: clampText(period, 64),
+        stack: clampText(stack, 64),
+        repoLink: clampText(links.repoLink, 80),
+        siteLink: clampText(links.siteLink, 80),
+      };
     })
     .slice(0, 6);
+}
+
+function normalizeProjectLink(raw: string): string {
+  const trimmed = raw.trim();
+  if (!trimmed) return '';
+  try {
+    const url = new URL(trimmed.startsWith('http://') || trimmed.startsWith('https://') ? trimmed : `https://${trimmed}`);
+    return url.toString();
+  } catch {
+    return '';
+  }
+}
+
+function normalizeProjectLinks(rawRepoLink: string, rawSiteLink: string): { repoLink: string; siteLink: string } {
+  const repoLink = normalizeProjectLink(rawRepoLink);
+  const siteLink = normalizeProjectLink(rawSiteLink);
+  if (siteLink) return { repoLink, siteLink };
+  if (!repoLink) return { repoLink: '', siteLink: '' };
+  if (repoLink.includes('github.com')) return { repoLink, siteLink: '' };
+  return { repoLink: '', siteLink: repoLink };
 }
 
 export async function GET(request: NextRequest) {
@@ -78,10 +108,13 @@ export async function GET(request: NextRequest) {
     ? projects
         .map((project, index) => {
           const y = 56 + index * rowHeight;
+          const detailText = `${project.description} | ${project.period} | ${project.stack}`;
+          const linkText = [project.repoLink ? 'Repo' : '', project.siteLink ? 'Site' : ''].filter(Boolean).join(' | ');
           return `
     <rect x="20" y="${y}" width="984" height="58" rx="10" fill="${palette.rowFill}" stroke="${palette.rowStroke}" />
     <text x="36" y="${y + 22}" fill="${palette.name}" font-family="Arial, sans-serif" font-size="16" font-weight="700">${escapeXml(project.name)}</text>
-    <text x="36" y="${y + 42}" fill="${palette.detail}" font-family="Arial, sans-serif" font-size="13">${escapeXml(project.description)} | ${escapeXml(project.period)} | ${escapeXml(project.stack)}</text>
+    <text x="36" y="${y + 42}" fill="${palette.detail}" font-family="Arial, sans-serif" font-size="13">${escapeXml(detailText)}</text>
+    ${linkText ? `<text x="988" y="${y + 22}" fill="${palette.title}" font-family="Arial, sans-serif" font-size="11" text-anchor="end">${escapeXml(linkText)}</text>` : ''}
   `;
         })
         .join('')

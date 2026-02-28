@@ -74,6 +74,8 @@ type ProjectRow = {
   description: string;
   period: string;
   stack: string;
+  repoLink: string;
+  siteLink: string;
 };
 
 type SavedBuilderState = {
@@ -86,7 +88,6 @@ type SavedBuilderState = {
   githubUsername: string;
   externalBadgeUrl: string;
   baekjoonId: string;
-  certBadgesInput: string;
   projectRowsInput: string;
 };
 
@@ -96,10 +97,34 @@ function parseProjectRows(input: string): ProjectRow[] {
     .map((line) => line.trim())
     .filter(Boolean)
     .map((line) => {
-      const [name = '-', description = '-', period = '-', stack = '-'] = line.split('|').map((part) => part.trim());
-      return { name, description, period, stack };
+      const [name = '-', description = '-', period = '-', stack = '-', rawRepoLink = '', rawSiteLink = ''] = line.split('|').map((part) => part.trim());
+      const links = normalizeProjectLinks(rawRepoLink, rawSiteLink);
+      return { name, description, period, stack, repoLink: links.repoLink, siteLink: links.siteLink };
     })
     .slice(0, 8);
+}
+
+function normalizeProjectLink(raw: string): string {
+  const trimmed = raw.trim();
+  if (!trimmed) return '';
+
+  try {
+    const url = new URL(trimmed.startsWith('http://') || trimmed.startsWith('https://') ? trimmed : `https://${trimmed}`);
+    return url.toString();
+  } catch {
+    return '';
+  }
+}
+
+function normalizeProjectLinks(rawRepoLink: string, rawSiteLink: string): { repoLink: string; siteLink: string } {
+  const repoLink = normalizeProjectLink(rawRepoLink);
+  const siteLink = normalizeProjectLink(rawSiteLink);
+  if (siteLink) return { repoLink, siteLink };
+  if (!repoLink) return { repoLink: '', siteLink: '' };
+
+  // Backward compatibility: legacy 5th field may be either repo or site.
+  if (repoLink.includes('github.com')) return { repoLink, siteLink: '' };
+  return { repoLink: '', siteLink: repoLink };
 }
 
 function normalizeBaekjoonId(raw: string): string {
@@ -147,9 +172,8 @@ export default function Home() {
   );
   const [baekjoonId, setBaekjoonId] = useState('wjdalsdk70');
 
-  const [certBadgesInput, setCertBadgesInput] = useState('AWS SAA,SQLD,정보처리기사');
   const [projectRowsInput, setProjectRowsInput] = useState(
-    'README Styler|GitHub README 카드 생성 서비스|2026.02 - 진행중|Next.js,TypeScript,Tailwind\nPortfolio 2.0|개인 포트폴리오 리뉴얼|2025.11 - 2026.01|React,Vite,Firebase',
+    'README Styler|GitHub README 카드 생성 서비스|2026.02 - 진행중|Next.js,TypeScript,Tailwind|github.com/mintydev/readme-styler|readme-styler.vercel.app\nPortfolio 2.0|개인 포트폴리오 리뉴얼|2025.11 - 2026.01|React,Vite,Firebase|github.com/mintydev/portfolio-2|minty.dev',
   );
 
   const [copiedReadme, setCopiedReadme] = useState(false);
@@ -198,7 +222,6 @@ export default function Home() {
         if (typeof saved.githubUsername === 'string') setGithubUsername(saved.githubUsername);
         if (typeof saved.externalBadgeUrl === 'string') setExternalBadgeUrl(saved.externalBadgeUrl);
         if (typeof saved.baekjoonId === 'string') setBaekjoonId(normalizeBaekjoonId(saved.baekjoonId));
-        if (typeof saved.certBadgesInput === 'string') setCertBadgesInput(saved.certBadgesInput);
         if (typeof saved.projectRowsInput === 'string') setProjectRowsInput(saved.projectRowsInput);
       } finally {
         if (isMounted) setHasLoadedProfileState(true);
@@ -218,14 +241,13 @@ export default function Home() {
       role,
       tagline,
       skills,
-      certs: certBadgesInput,
       projects: projectRowsInput,
       mode: cardMode,
       theme,
     });
 
     return `/api/card?${params.toString()}`;
-  }, [cardMode, certBadgesInput, name, projectRowsInput, role, skills, tagline, theme]);
+  }, [cardMode, name, projectRowsInput, role, skills, tagline, theme]);
 
   const badgePath = useMemo(() => {
     const params = new URLSearchParams({
@@ -300,7 +322,6 @@ export default function Home() {
       githubUsername,
       externalBadgeUrl,
       baekjoonId: normalizeBaekjoonId(baekjoonId),
-      certBadgesInput,
       projectRowsInput,
     };
 
@@ -337,8 +358,8 @@ export default function Home() {
   }, [isAuthenticated]);
 
   const inputClass = isUiLight
-    ? 'rounded-xl border border-slate-300 bg-white px-4 py-3 text-slate-900 outline-none ring-cyan-500/40 transition focus:ring'
-    : 'rounded-xl border border-white/15 bg-slate-900/60 px-4 py-3 text-slate-100 outline-none ring-cyan-300/50 transition focus:ring';
+    ? 'w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-slate-900 outline-none ring-cyan-500/40 transition focus:ring'
+    : 'w-full rounded-xl border border-white/15 bg-slate-900/60 px-4 py-3 text-slate-100 outline-none ring-cyan-300/50 transition focus:ring';
   const shellClass = isUiLight
     ? 'min-h-screen w-full bg-[radial-gradient(circle_at_20%_15%,#bae6fd_0%,#e2e8f0_48%,#f8fafc_100%)] px-4 py-4 text-slate-900 md:px-6 md:py-6'
     : 'min-h-screen w-full bg-[radial-gradient(circle_at_20%_15%,#164e63_0%,#020617_45%,#020617_100%)] px-4 py-4 text-slate-100 md:px-6 md:py-6';
@@ -354,7 +375,6 @@ export default function Home() {
   const previewBoxClass = isUiLight
     ? 'space-y-3 overflow-auto rounded-2xl border border-slate-300 bg-white p-3 lg:min-h-0 lg:flex-1'
     : 'space-y-3 overflow-auto rounded-2xl border border-white/10 bg-slate-950/40 p-3 lg:min-h-0 lg:flex-1';
-  const mutedTextClass = isUiLight ? 'text-slate-600' : 'text-slate-300';
   const primaryActionBtnClass = isUiLight
     ? 'w-full rounded-xl border border-slate-300 bg-white px-4 py-3 font-semibold text-slate-900 transition hover:bg-slate-100'
     : 'w-full rounded-xl bg-white px-4 py-3 font-semibold text-slate-950 transition hover:bg-slate-200';
@@ -378,6 +398,29 @@ export default function Home() {
   const projectNameClass = isCardLight ? 'text-slate-900' : 'text-slate-100';
   const projectDescClass = isCardLight ? 'text-slate-700' : 'text-slate-300';
   const projectMetaClass = isCardLight ? 'text-slate-600' : 'text-slate-400';
+  const projectLinkClass = isCardLight
+    ? 'border border-slate-300 bg-white text-slate-700 hover:bg-slate-100'
+    : 'border border-white/20 bg-white/10 text-slate-100 hover:bg-white/20';
+  const fieldLabelClass = isUiLight ? 'mb-1 text-xs font-semibold text-slate-700' : 'mb-1 text-xs font-semibold text-slate-300';
+  const fieldHelpClass = isUiLight ? 'mb-2 text-[11px] text-slate-500' : 'mb-2 text-[11px] text-slate-400';
+  const sectionDividerClass = isUiLight ? 'border-slate-300/80' : 'border-white/10';
+  const themeTabBaseClass = 'rounded-lg px-3 py-1.5 text-sm font-semibold transition';
+  const themeTabActiveClass: Record<ThemeKey, string> = isUiLight
+    ? {
+        ocean: 'bg-cyan-600 text-white',
+        sunset: 'bg-rose-500 text-white',
+        forest: 'bg-emerald-600 text-white',
+        amber: 'bg-amber-500 text-slate-950',
+      }
+    : {
+        ocean: 'bg-cyan-300 text-slate-950',
+        sunset: 'bg-rose-300 text-slate-950',
+        forest: 'bg-emerald-300 text-slate-950',
+        amber: 'bg-amber-300 text-slate-950',
+      };
+  const themeTabInactiveClass = isUiLight
+    ? 'border border-slate-300 bg-white text-slate-700 hover:bg-slate-100'
+    : 'border border-white/20 bg-slate-900/40 text-slate-200 hover:bg-slate-800/70';
   const previewImageClass = 'block h-auto w-full rounded-xl';
 
   return (
@@ -493,52 +536,79 @@ export default function Home() {
 
       <div className="mx-auto grid w-full max-w-[1500px] gap-4 md:gap-6 lg:grid-cols-[0.9fr_1.1fr]">
         <section className={panelClass}>
-          <h1 className={`mb-2 text-3xl font-bold tracking-tight md:text-4xl ${isUiLight ? 'text-slate-900' : 'text-slate-100'}`}>GitHub README 카드 빌더</h1>
-          <p className={`mb-6 ${mutedTextClass}`}>프로필 카드 + 배지 + 프로젝트 표를 한 번에 생성합니다.</p>
+          <h1 className={`mb-4 text-3xl font-bold tracking-tight md:text-4xl ${isUiLight ? 'text-slate-900' : 'text-slate-100'}`}>GitHub README 카드 빌더</h1>
+          <div className="mb-6 inline-flex flex-wrap gap-2">
+            {themeOptions.map((option) => (
+              <button
+                key={option.key}
+                type="button"
+                onClick={() => setTheme(option.key)}
+                className={`${themeTabBaseClass} ${theme === option.key ? themeTabActiveClass[option.key] : themeTabInactiveClass}`}
+              >
+                {option.label}
+              </button>
+            ))}
+          </div>
 
           <div className="grid gap-4">
-            <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Name" className={inputClass} />
-            <input value={role} onChange={(e) => setRole(e.target.value)} placeholder="Role" className={inputClass} />
-            <textarea
-              value={tagline}
-              onChange={(e) => setTagline(e.target.value)}
-              placeholder="Tagline (줄바꿈 가능)"
-              rows={3}
-              className={inputClass}
-            />
-            <input value={skills} onChange={(e) => setSkills(e.target.value)} placeholder="Skills (comma separated)" className={inputClass} />
+            <label className="block">
+              <p className={fieldLabelClass}>이름</p>
+              <p className={fieldHelpClass}>카드에 표시할 이름을 입력하세요. 예: Minty Kim</p>
+              <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Name" className={inputClass} />
+            </label>
+            <label className="block">
+              <p className={fieldLabelClass}>역할</p>
+              <p className={fieldHelpClass}>직무나 포지션을 입력하세요. 예: Frontend Engineer</p>
+              <input value={role} onChange={(e) => setRole(e.target.value)} placeholder="Role" className={inputClass} />
+            </label>
+            <label className="block">
+              <p className={fieldLabelClass}>한 줄 소개</p>
+              <p className={fieldHelpClass}>짧은 소개 문장을 입력하세요. 줄바꿈도 가능합니다.</p>
+              <textarea
+                value={tagline}
+                onChange={(e) => setTagline(e.target.value)}
+                placeholder="Tagline (줄바꿈 가능)"
+                rows={2}
+                className={inputClass}
+              />
+            </label>
+            <label className="block">
+              <p className={fieldLabelClass}>기술 스택</p>
+              <p className={fieldHelpClass}>쉼표로 구분해서 입력하세요. 예: TypeScript,React,Next.js</p>
+              <input value={skills} onChange={(e) => setSkills(e.target.value)} placeholder="Skills (comma separated)" className={inputClass} />
+            </label>
+            <label className={`block border-t pt-4 ${sectionDividerClass}`}>
+              <p className={fieldLabelClass}>Git Ranker 배지 URL (선택)</p>
+              <p className={fieldHelpClass}>외부 배지를 쓰고 싶을 때 URL을 입력하세요. 비우면 기본 배지를 사용합니다.</p>
+              <input
+                value={externalBadgeUrl}
+                onChange={(e) => setExternalBadgeUrl(e.target.value)}
+                placeholder="Git Ranker Badge URL (optional)"
+                className={inputClass}
+              />
+            </label>
+            <label className="block">
+              <p className={fieldLabelClass}>백준 ID</p>
+              <p className={fieldHelpClass}>solved.ac/백준 카드에 사용할 본인 ID를 입력하세요.</p>
+              <input
+                value={baekjoonId}
+                onChange={(e) => setBaekjoonId(normalizeBaekjoonId(e.target.value))}
+                placeholder="Baekjoon ID"
+                className={inputClass}
+              />
+            </label>
 
-            <select value={theme} onChange={(e) => setTheme(e.target.value as ThemeKey)} className={inputClass}>
-              {themeOptions.map((option) => (
-                <option key={option.key} value={option.key}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
-
-            <div className="mt-2 h-px bg-white/10" />
-
-            <input
-              value={externalBadgeUrl}
-              onChange={(e) => setExternalBadgeUrl(e.target.value)}
-              placeholder="Git Ranker Badge URL (optional)"
-              className={inputClass}
-            />
-            <input
-              value={baekjoonId}
-              onChange={(e) => setBaekjoonId(normalizeBaekjoonId(e.target.value))}
-              placeholder="Baekjoon ID"
-              className={inputClass}
-            />
-
-            <textarea value={certBadgesInput} onChange={(e) => setCertBadgesInput(e.target.value)} placeholder="자격증 배지 (comma separated)" rows={2} className={inputClass} />
-            <textarea
-              value={projectRowsInput}
-              onChange={(e) => setProjectRowsInput(e.target.value)}
-              placeholder="프로젝트명|소개|기간|스택 (한 줄에 하나)"
-              rows={4}
-              className={`${inputClass} font-mono text-sm`}
-            />
+            <label className={`block border-t pt-4 ${sectionDividerClass}`}>
+              <p className={fieldLabelClass}>프로젝트 목록</p>
+              <p className={fieldHelpClass}>한 줄에 하나씩 입력: 프로젝트명|소개|기간|스택|레포 링크(선택)|사이트 링크(선택)</p>
+              <textarea
+                value={projectRowsInput}
+                onChange={(e) => setProjectRowsInput(e.target.value)}
+                placeholder="프로젝트명|소개|기간|스택|레포 링크(선택)|사이트 링크(선택)"
+                rows={4}
+                className={`${inputClass} font-mono text-sm`}
+              />
+            </label>
             <div className="grid gap-2 sm:grid-cols-[1fr_auto]">
               <p className={`text-xs ${isUiLight ? 'text-slate-600' : 'text-slate-300'}`}>
                 {saveNotice || (session?.user?.nodeId ? '입력값을 수정한 뒤 저장 버튼을 눌러 반영하세요.' : '로그인 후 사용자별 설정 저장이 가능합니다.')}
@@ -585,10 +655,47 @@ export default function Home() {
                 {projectRows.map((project, index) => (
                   <div
                     key={`${project.name}-${index}`}
-                    className={`rounded-lg px-3 py-2 ${projectRowClass}`}
+                    className={`min-h-[86px] rounded-lg px-3 py-2 ${projectRowClass}`}
                     style={isUiLightCardDark ? { backgroundColor: '#020617', borderColor: '#334155' } : undefined}
                   >
-                    <p className={`text-sm font-semibold ${projectNameClass}`}>{project.name}</p>
+                    <div className="flex items-center justify-between gap-2">
+                      <p className={`min-w-0 flex-1 truncate text-sm font-semibold ${projectNameClass}`}>{project.name}</p>
+                      <div className="flex w-[118px] shrink-0 items-center justify-end gap-1">
+                        {project.repoLink ? (
+                          <a
+                            href={project.repoLink}
+                            target="_blank"
+                            rel="noreferrer"
+                            className={`inline-flex h-6 w-[56px] items-center justify-center gap-1 rounded-md px-2 py-1 text-[11px] font-semibold ${projectLinkClass}`}
+                            title={project.repoLink}
+                          >
+                            <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                              <path d="M12 .5a12 12 0 0 0-3.8 23.4c.6.1.8-.2.8-.6v-2.2c-3.3.7-4-1.4-4-1.4-.5-1.3-1.2-1.7-1.2-1.7-1-.6.1-.6.1-.6 1.1.1 1.8 1.2 1.8 1.2 1 .1 2.6 1 3.3.7.1-.7.4-1.1.7-1.3-2.7-.3-5.6-1.3-5.6-6A4.6 4.6 0 0 1 6.1 8c-.1-.3-.5-1.5.1-3.1 0 0 1-.3 3.3 1.2a11.5 11.5 0 0 1 6 0c2.3-1.5 3.3-1.2 3.3-1.2.6 1.6.2 2.8.1 3.1a4.6 4.6 0 0 1 1.2 3.2c0 4.7-2.9 5.6-5.7 5.9.4.4.8 1.1.8 2.3v3.3c0 .4.2.7.8.6A12 12 0 0 0 12 .5Z" />
+                            </svg>
+                            <span>Repo</span>
+                          </a>
+                        ) : (
+                          <span className="invisible inline-flex h-6 w-[56px] items-center justify-center gap-1 rounded-md px-2 py-1 text-[11px] font-semibold">Repo</span>
+                        )}
+                        {project.siteLink ? (
+                          <a
+                            href={project.siteLink}
+                            target="_blank"
+                            rel="noreferrer"
+                            className={`inline-flex h-6 w-[56px] items-center justify-center gap-1 rounded-md px-2 py-1 text-[11px] font-semibold ${projectLinkClass}`}
+                            title={project.siteLink}
+                          >
+                            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                              <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="2" />
+                              <path d="M3 12h18M12 3c2.5 2.7 3.8 5.7 3.8 9S14.5 18.3 12 21c-2.5-2.7-3.8-5.7-3.8-9S9.5 5.7 12 3Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                            </svg>
+                            <span>Site</span>
+                          </a>
+                        ) : (
+                          <span className="invisible inline-flex h-6 w-[56px] items-center justify-center gap-1 rounded-md px-2 py-1 text-[11px] font-semibold">Site</span>
+                        )}
+                      </div>
+                    </div>
                     <p className={`text-xs ${projectDescClass}`}>{project.description}</p>
                     <p className={`mt-1 text-[11px] ${projectMetaClass}`}>
                       {project.period} | {project.stack}

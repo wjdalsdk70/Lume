@@ -18,6 +18,26 @@ function splitMultiline(value: string): string[] {
   return lines.length ? lines : [''];
 }
 
+function normalizeProjectLink(raw: string): string {
+  const trimmed = raw.trim();
+  if (!trimmed) return '';
+  try {
+    const parsed = new URL(trimmed.startsWith('http://') || trimmed.startsWith('https://') ? trimmed : `https://${trimmed}`);
+    return parsed.toString();
+  } catch {
+    return '';
+  }
+}
+
+function normalizeProjectLinks(rawRepoLink: string, rawSiteLink: string): { repoLink: string; siteLink: string } {
+  const repoLink = normalizeProjectLink(rawRepoLink);
+  const siteLink = normalizeProjectLink(rawSiteLink);
+  if (siteLink) return { repoLink, siteLink };
+  if (!repoLink) return { repoLink: '', siteLink: '' };
+  if (repoLink.includes('github.com')) return { repoLink, siteLink: '' };
+  return { repoLink: '', siteLink: repoLink };
+}
+
 const THEMES: Record<string, { accent: string; panel: string; panelStroke: string; rowFill: string; rowStroke: string }> = {
   ocean: { accent: '#67E8F9', panel: 'rgba(15,23,42,0.65)', panelStroke: 'rgba(103,232,249,0.22)', rowFill: 'rgba(2,6,23,0.45)', rowStroke: 'rgba(255,255,255,0.08)' },
   sunset: { accent: '#FB7185', panel: 'rgba(45,19,44,0.65)', panelStroke: 'rgba(251,113,133,0.24)', rowFill: 'rgba(30,10,20,0.45)', rowStroke: 'rgba(255,200,200,0.10)' },
@@ -64,8 +84,16 @@ export async function GET(request: NextRequest) {
     .map((line) => line.trim())
     .filter(Boolean)
     .map((line) => {
-      const [name = '-', description = '-', period = '-', stack = '-'] = line.split('|').map((part) => clampText(part, 44));
-      return { name, description, period, stack };
+      const [name = '-', description = '-', period = '-', stack = '-', rawRepoLink = '', rawSiteLink = ''] = line.split('|').map((part) => clampText(part, 120));
+      const links = normalizeProjectLinks(rawRepoLink, rawSiteLink);
+      return {
+        name: clampText(name, 44),
+        description: clampText(description, 44),
+        period: clampText(period, 44),
+        stack: clampText(stack, 44),
+        repoLink: clampText(links.repoLink, 80),
+        siteLink: clampText(links.siteLink, 80),
+      };
     })
     .slice(0, 4);
 
@@ -132,10 +160,13 @@ export async function GET(request: NextRequest) {
     ? projects
         .map((project, index) => {
           const rowY = projectsY + projectTitleHeight + 8 + index * projectRowHeight;
+          const detailText = `${project.description} | ${project.period} | ${project.stack}`;
+          const linkText = [project.repoLink ? 'Repo' : '', project.siteLink ? 'Site' : ''].filter(Boolean).join(' | ');
           return `
     <rect x="44" y="${rowY}" width="1112" height="50" rx="10" fill="${tone.rowFill}" stroke="${tone.rowStroke}" />
     <text x="60" y="${rowY + 20}" fill="#F8FAFC" font-family="Arial, sans-serif" font-size="14" font-weight="700">${escapeXml(project.name)}</text>
-    <text x="60" y="${rowY + 39}" fill="#CBD5E1" font-family="Arial, sans-serif" font-size="12">${escapeXml(project.description)} | ${escapeXml(project.period)} | ${escapeXml(project.stack)}</text>
+    <text x="60" y="${rowY + 39}" fill="#CBD5E1" font-family="Arial, sans-serif" font-size="12">${escapeXml(detailText)}</text>
+    ${linkText ? `<text x="1136" y="${rowY + 20}" fill="${tone.accent}" font-family="Arial, sans-serif" font-size="11" text-anchor="end">${escapeXml(linkText)}</text>` : ''}
   `;
         })
         .join('')

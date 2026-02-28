@@ -14,7 +14,7 @@ const FALLBACK = {
   baekjoonId: 'wjdalsdk70',
   certBadgesInput: 'AWS SAA,SQLD,정보처리기사',
   projectRowsInput:
-    'README Styler|GitHub README 카드 생성 서비스|2026.02 - 진행중|Next.js,TypeScript,Tailwind\\nPortfolio 2.0|개인 포트폴리오 리뉴얼|2025.11 - 2026.01|React,Vite,Firebase',
+    'README Styler|GitHub README 카드 생성 서비스|2026.02 - 진행중|Next.js,TypeScript,Tailwind|github.com/mintydev/readme-styler|readme-styler.vercel.app\\nPortfolio 2.0|개인 포트폴리오 리뉴얼|2025.11 - 2026.01|React,Vite,Firebase|github.com/mintydev/portfolio-2|minty.dev',
 };
 
 function pickString(value: unknown, fallback: string) {
