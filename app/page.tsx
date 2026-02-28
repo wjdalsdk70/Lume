@@ -3,12 +3,18 @@
 import { useMemo, useState } from 'react';
 
 type ThemeKey = 'ocean' | 'sunset' | 'forest';
+type CardMode = 'dark' | 'light';
 
 const themeOptions: Array<{ key: ThemeKey; label: string }> = [
   { key: 'ocean', label: 'Ocean' },
   { key: 'sunset', label: 'Sunset' },
   { key: 'forest', label: 'Forest' },
 ];
+const PROJECT_THEME_TONE: Record<ThemeKey, { darkTitle: string; lightTitle: string; darkPanel: string; lightPanel: string }> = {
+  ocean: { darkTitle: 'text-cyan-200/80', lightTitle: 'text-cyan-700', darkPanel: 'bg-slate-900/50', lightPanel: 'bg-slate-100/90' },
+  sunset: { darkTitle: 'text-rose-300/80', lightTitle: 'text-rose-700', darkPanel: 'bg-rose-950/30', lightPanel: 'bg-rose-50/90' },
+  forest: { darkTitle: 'text-emerald-300/80', lightTitle: 'text-emerald-700', darkPanel: 'bg-emerald-950/30', lightPanel: 'bg-emerald-50/90' },
+};
 const FIXED_BASE_URL = 'https://lume-self.vercel.app';
 
 type ProjectRow = {
@@ -31,6 +37,7 @@ function parseProjectRows(input: string): ProjectRow[] {
 }
 
 export default function Home() {
+  const [cardMode, setCardMode] = useState<CardMode>('dark');
   const [name, setName] = useState('Minty Kim');
   const [role, setRole] = useState('Frontend Engineer');
   const [tagline, setTagline] = useState('Designing clean UX and robust web apps.');
@@ -66,16 +73,18 @@ export default function Home() {
       skills,
       certs: certBadgesInput,
       projects: projectRowsInput,
+      mode: cardMode,
       theme,
     });
 
     return `/api/card?${params.toString()}`;
-  }, [certBadgesInput, name, projectRowsInput, role, skills, tagline, theme]);
+  }, [cardMode, certBadgesInput, name, projectRowsInput, role, skills, tagline, theme]);
 
   const badgePath = useMemo(() => {
     const params = new URLSearchParams({
       username: githubUsername,
       tier: rankTier,
+      mode: cardMode,
       score: rankScore,
       rank: badgeRank,
       top: badgeTop,
@@ -83,7 +92,7 @@ export default function Home() {
     });
 
     return `/api/badge?${params.toString()}`;
-  }, [badgeDiff, badgeRank, badgeTop, githubUsername, rankScore, rankTier]);
+  }, [badgeDiff, badgeRank, badgeTop, cardMode, githubUsername, rankScore, rankTier]);
 
   const baekjoonCardUrl = useMemo(() => {
     const trimmed = baekjoonId.trim();
@@ -102,6 +111,7 @@ export default function Home() {
       skills,
       certs: certBadgesInput,
       projects: projectRowsInput,
+      mode: cardMode,
       theme,
       username: githubUsername,
       tier: rankTier,
@@ -123,6 +133,7 @@ export default function Home() {
     githubUsername,
     name,
     certBadgesInput,
+    cardMode,
     projectRowsInput,
     rankScore,
     rankTier,
@@ -136,18 +147,19 @@ export default function Home() {
     const params = new URLSearchParams({
       username: githubUsername,
       tier: rankTier,
+      mode: cardMode,
       score: rankScore,
       rank: badgeRank,
       top: badgeTop,
       diff: badgeDiff,
     });
     return `/api/v1/badges/${encodeURIComponent(badgeRouteId.trim() || githubUsername)}?${params.toString()}`;
-  }, [badgeDiff, badgeRank, badgeRouteId, badgeTop, githubUsername, rankScore, rankTier]);
+  }, [badgeDiff, badgeRank, badgeRouteId, badgeTop, cardMode, githubUsername, rankScore, rankTier]);
 
   const githubReadmeSnippet = useMemo(() => {
     const profileCardUrl = `${FIXED_BASE_URL}${cardPath}`;
     const rankBadgeUrl = externalBadgeUrl.trim() || `https://www.git-ranker.com/api/v1/badges/${encodeURIComponent(badgeRouteId.trim())}`;
-    const projectsCardUrl = `${FIXED_BASE_URL}/api/projects-card?${new URLSearchParams({ projects: projectRowsInput }).toString()}`;
+    const projectsCardUrl = `${FIXED_BASE_URL}/api/projects-card?${new URLSearchParams({ projects: projectRowsInput, mode: cardMode, theme }).toString()}`;
 
     return [
       '<p align="center">',
@@ -163,7 +175,7 @@ export default function Home() {
       `  <img src="${projectsCardUrl}" alt="${name} Projects Card" />`,
       '</p>',
     ].join('\n');
-  }, [baekjoonCardUrl, baekjoonId, badgeRouteId, cardPath, externalBadgeUrl, name, projectRowsInput]);
+  }, [baekjoonCardUrl, baekjoonId, badgeRouteId, cardMode, cardPath, externalBadgeUrl, name, projectRowsInput, theme]);
 
   async function downloadPreviewImage(format: 'svg' | 'png') {
     setDownloadingFormat(format);
@@ -237,6 +249,11 @@ export default function Home() {
     setTimeout(() => setCopiedReadme(false), 1200);
   }
 
+  const isCardLight = cardMode === 'light';
+  const projectTone = PROJECT_THEME_TONE[theme];
+
+  const inputClass = 'rounded-xl border border-white/15 bg-slate-900/60 px-4 py-3 outline-none ring-cyan-300/50 transition focus:ring';
+
   return (
     <main className="min-h-screen w-full bg-[radial-gradient(circle_at_20%_15%,#164e63_0%,#020617_45%,#020617_100%)] px-4 py-4 text-slate-100 md:px-6 md:py-6">
       <div className="mx-auto grid min-h-[calc(100vh-2rem)] w-full max-w-[1500px] gap-4 md:min-h-[calc(100vh-3rem)] md:gap-6 lg:grid-cols-[0.9fr_1.1fr]">
@@ -247,19 +264,40 @@ export default function Home() {
           <h1 className="mb-2 text-3xl font-bold tracking-tight md:text-4xl">GitHub README 카드 빌더</h1>
           <p className="mb-6 text-slate-300">프로필 카드 + 배지 + 프로젝트 표를 한 번에 생성합니다.</p>
 
+          <div className="mb-4 inline-flex rounded-xl border border-cyan-300/40 bg-cyan-300/10 p-1">
+            <button
+              type="button"
+              onClick={() => setCardMode('dark')}
+              className={`rounded-lg px-3 py-1.5 text-sm font-semibold transition ${
+                cardMode === 'dark' ? 'bg-cyan-300 text-slate-950' : 'text-cyan-100'
+              }`}
+            >
+              Dark
+            </button>
+            <button
+              type="button"
+              onClick={() => setCardMode('light')}
+              className={`rounded-lg px-3 py-1.5 text-sm font-semibold transition ${
+                cardMode === 'light' ? 'bg-cyan-300 text-slate-950' : 'text-cyan-100'
+              }`}
+            >
+              Light
+            </button>
+          </div>
+
           <div className="grid gap-4">
-            <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Name" className="rounded-xl border border-white/15 bg-slate-900/60 px-4 py-3 outline-none ring-cyan-300/50 transition focus:ring" />
-            <input value={role} onChange={(e) => setRole(e.target.value)} placeholder="Role" className="rounded-xl border border-white/15 bg-slate-900/60 px-4 py-3 outline-none ring-cyan-300/50 transition focus:ring" />
+            <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Name" className={inputClass} />
+            <input value={role} onChange={(e) => setRole(e.target.value)} placeholder="Role" className={inputClass} />
             <textarea
               value={tagline}
               onChange={(e) => setTagline(e.target.value)}
               placeholder="Tagline (줄바꿈 가능)"
               rows={3}
-              className="rounded-xl border border-white/15 bg-slate-900/60 px-4 py-3 outline-none ring-cyan-300/50 transition focus:ring"
+              className={inputClass}
             />
-            <input value={skills} onChange={(e) => setSkills(e.target.value)} placeholder="Skills (comma separated)" className="rounded-xl border border-white/15 bg-slate-900/60 px-4 py-3 outline-none ring-cyan-300/50 transition focus:ring" />
+            <input value={skills} onChange={(e) => setSkills(e.target.value)} placeholder="Skills (comma separated)" className={inputClass} />
 
-            <select value={theme} onChange={(e) => setTheme(e.target.value as ThemeKey)} className="rounded-xl border border-white/15 bg-slate-900/60 px-4 py-3 outline-none ring-cyan-300/50 transition focus:ring">
+            <select value={theme} onChange={(e) => setTheme(e.target.value as ThemeKey)} className={inputClass}>
               {themeOptions.map((option) => (
                 <option key={option.key} value={option.key}>
                   {option.label}
@@ -270,27 +308,27 @@ export default function Home() {
             <div className="mt-2 h-px bg-white/10" />
 
             <div className="grid gap-3 sm:grid-cols-3">
-              <input value={githubUsername} onChange={(e) => setGithubUsername(e.target.value)} placeholder="GitHub Username" className="rounded-xl border border-white/15 bg-slate-900/60 px-4 py-3 outline-none ring-cyan-300/50 transition focus:ring" />
-              <input value={rankTier} onChange={(e) => setRankTier(e.target.value.toUpperCase())} placeholder="Rank Tier (GOLD)" className="rounded-xl border border-white/15 bg-slate-900/60 px-4 py-3 outline-none ring-cyan-300/50 transition focus:ring" />
-              <input value={rankScore} onChange={(e) => setRankScore(e.target.value)} placeholder="Rank Score (1580)" className="rounded-xl border border-white/15 bg-slate-900/60 px-4 py-3 outline-none ring-cyan-300/50 transition focus:ring" />
+              <input value={githubUsername} onChange={(e) => setGithubUsername(e.target.value)} placeholder="GitHub Username" className={inputClass} />
+              <input value={rankTier} onChange={(e) => setRankTier(e.target.value.toUpperCase())} placeholder="Rank Tier (GOLD)" className={inputClass} />
+              <input value={rankScore} onChange={(e) => setRankScore(e.target.value)} placeholder="Rank Score (1580)" className={inputClass} />
             </div>
             <div className="grid gap-3 sm:grid-cols-3">
-              <input value={badgeRank} onChange={(e) => setBadgeRank(e.target.value)} placeholder="Rank (#412)" className="rounded-xl border border-white/15 bg-slate-900/60 px-4 py-3 outline-none ring-cyan-300/50 transition focus:ring" />
-              <input value={badgeTop} onChange={(e) => setBadgeTop(e.target.value)} placeholder="Top Percentile (12)" className="rounded-xl border border-white/15 bg-slate-900/60 px-4 py-3 outline-none ring-cyan-300/50 transition focus:ring" />
-              <input value={badgeDiff} onChange={(e) => setBadgeDiff(e.target.value)} placeholder="Diff (+42)" className="rounded-xl border border-white/15 bg-slate-900/60 px-4 py-3 outline-none ring-cyan-300/50 transition focus:ring" />
+              <input value={badgeRank} onChange={(e) => setBadgeRank(e.target.value)} placeholder="Rank (#412)" className={inputClass} />
+              <input value={badgeTop} onChange={(e) => setBadgeTop(e.target.value)} placeholder="Top Percentile (12)" className={inputClass} />
+              <input value={badgeDiff} onChange={(e) => setBadgeDiff(e.target.value)} placeholder="Diff (+42)" className={inputClass} />
             </div>
             <input
               value={externalBadgeUrl}
               onChange={(e) => setExternalBadgeUrl(e.target.value)}
               placeholder="Git Ranker Badge URL (optional)"
-              className="rounded-xl border border-white/15 bg-slate-900/60 px-4 py-3 outline-none ring-cyan-300/50 transition focus:ring"
+              className={inputClass}
             />
             <div className="grid gap-3 sm:grid-cols-[1fr_auto]">
               <input
                 value={badgeRouteId}
                 onChange={(e) => setBadgeRouteId(e.target.value)}
                 placeholder="Badge Route ID (for /api/v1/badges/{id})"
-                className="rounded-xl border border-white/15 bg-slate-900/60 px-4 py-3 outline-none ring-cyan-300/50 transition focus:ring"
+                className={inputClass}
               />
               <button
                 type="button"
@@ -304,16 +342,16 @@ export default function Home() {
               value={baekjoonId}
               onChange={(e) => setBaekjoonId(e.target.value)}
               placeholder="Baekjoon ID (optional)"
-              className="rounded-xl border border-white/15 bg-slate-900/60 px-4 py-3 outline-none ring-cyan-300/50 transition focus:ring"
+              className={inputClass}
             />
 
-            <textarea value={certBadgesInput} onChange={(e) => setCertBadgesInput(e.target.value)} placeholder="자격증 배지 (comma separated)" rows={2} className="rounded-xl border border-white/15 bg-slate-900/60 px-4 py-3 outline-none ring-cyan-300/50 transition focus:ring" />
+            <textarea value={certBadgesInput} onChange={(e) => setCertBadgesInput(e.target.value)} placeholder="자격증 배지 (comma separated)" rows={2} className={inputClass} />
             <textarea
               value={projectRowsInput}
               onChange={(e) => setProjectRowsInput(e.target.value)}
               placeholder="프로젝트명|소개|기간|스택 (한 줄에 하나)"
               rows={4}
-              className="rounded-xl border border-white/15 bg-slate-900/60 px-4 py-3 font-mono text-sm outline-none ring-cyan-300/50 transition focus:ring"
+              className={`${inputClass} font-mono text-sm`}
             />
           </div>
         </section>
@@ -336,14 +374,20 @@ export default function Home() {
                 <img src={baekjoonCardUrl} alt="Baekjoon Card Preview" className="block h-auto w-full rounded-xl bg-white" onError={() => setPreviewFailed(true)} />
               ) : null}
             </div>
-            <div className="rounded-xl border border-white/10 bg-slate-900/50 p-4">
-              <p className="mb-3 text-xs uppercase tracking-[0.14em] text-cyan-200/80">Projects</p>
+            <div
+              className={`rounded-xl p-4 ${
+                isCardLight
+                  ? `border border-slate-300 ${projectTone.lightPanel}`
+                  : `border border-white/10 ${projectTone.darkPanel}`
+              }`}
+            >
+              <p className={`mb-3 text-xs uppercase tracking-[0.14em] ${isCardLight ? projectTone.lightTitle : projectTone.darkTitle}`}>Projects</p>
               <div className="space-y-2">
                 {projectRows.map((project, index) => (
-                  <div key={`${project.name}-${index}`} className="rounded-lg border border-white/10 bg-slate-950/45 px-3 py-2">
-                    <p className="text-sm font-semibold text-slate-100">{project.name}</p>
-                    <p className="text-xs text-slate-300">{project.description}</p>
-                    <p className="mt-1 text-[11px] text-slate-400">
+                  <div key={`${project.name}-${index}`} className={`rounded-lg px-3 py-2 ${isCardLight ? 'border border-slate-300 bg-white' : 'border border-white/10 bg-slate-950/45'}`}>
+                    <p className={`text-sm font-semibold ${isCardLight ? 'text-slate-900' : 'text-slate-100'}`}>{project.name}</p>
+                    <p className={`text-xs ${isCardLight ? 'text-slate-700' : 'text-slate-300'}`}>{project.description}</p>
+                    <p className={`mt-1 text-[11px] ${isCardLight ? 'text-slate-600' : 'text-slate-400'}`}>
                       {project.period} | {project.stack}
                     </p>
                   </div>

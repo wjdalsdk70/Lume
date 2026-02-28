@@ -18,6 +18,12 @@ function splitMultiline(value: string): string[] {
   return lines.length ? lines : [''];
 }
 
+const THEMES: Record<string, { accent: string; panel: string; panelStroke: string; rowFill: string; rowStroke: string }> = {
+  ocean: { accent: '#67E8F9', panel: 'rgba(15,23,42,0.65)', panelStroke: 'rgba(103,232,249,0.22)', rowFill: 'rgba(2,6,23,0.45)', rowStroke: 'rgba(255,255,255,0.08)' },
+  sunset: { accent: '#FB7185', panel: 'rgba(45,19,44,0.65)', panelStroke: 'rgba(251,113,133,0.24)', rowFill: 'rgba(30,10,20,0.45)', rowStroke: 'rgba(255,200,200,0.10)' },
+  forest: { accent: '#34D399', panel: 'rgba(5,46,43,0.65)', panelStroke: 'rgba(52,211,153,0.24)', rowFill: 'rgba(3,24,20,0.45)', rowStroke: 'rgba(187,247,208,0.10)' },
+};
+
 async function toDataUri(imageUrl: string): Promise<string> {
   const response = await fetch(imageUrl, { cache: 'no-store' });
   if (!response.ok) {
@@ -39,6 +45,7 @@ export async function GET(request: NextRequest) {
   const tagline = searchParams.get('tagline') || 'Designing clean UX and robust web apps.';
   const skills = clampText(searchParams.get('skills') || 'TypeScript,React,Next.js,Tailwind', 180);
   const certs = clampText(searchParams.get('certs') || '', 240);
+  const mode = searchParams.get('mode') === 'light' ? 'light' : 'dark';
   const theme = clampText(searchParams.get('theme') || 'ocean', 12);
 
   const username = clampText(searchParams.get('username') || 'mintydev', 28);
@@ -60,12 +67,13 @@ export async function GET(request: NextRequest) {
     })
     .slice(0, 4);
 
-  const cardParams = new URLSearchParams({ name, role, tagline, skills, certs, theme });
+  const cardParams = new URLSearchParams({ name, role, tagline, skills, certs, mode, theme });
   const cardUrl = `${origin}/api/card?${cardParams.toString()}`;
 
   const badgeParams = new URLSearchParams({
     username,
     tier,
+    mode,
     score,
     rank,
     top,
@@ -81,6 +89,7 @@ export async function GET(request: NextRequest) {
     ? `${origin}/api/image-proxy?${new URLSearchParams({ src: baekjoonUrl }).toString()}`
     : '';
   const cardHref = await toDataUri(cardUrl).catch(() => cardUrl);
+  const tone = THEMES[theme] || THEMES.ocean;
 
   const hasBaekjoon = Boolean(baekjoonUrl);
   const certCount = certs
@@ -112,7 +121,7 @@ export async function GET(request: NextRequest) {
         .map((project, index) => {
           const rowY = projectsY + projectTitleHeight + 8 + index * projectRowHeight;
           return `
-    <rect x="44" y="${rowY}" width="1112" height="50" rx="10" fill="rgba(2,6,23,0.45)" stroke="rgba(255,255,255,0.08)" />
+    <rect x="44" y="${rowY}" width="1112" height="50" rx="10" fill="${tone.rowFill}" stroke="${tone.rowStroke}" />
     <text x="60" y="${rowY + 20}" fill="#F8FAFC" font-family="Arial, sans-serif" font-size="14" font-weight="700">${escapeXml(project.name)}</text>
     <text x="60" y="${rowY + 39}" fill="#CBD5E1" font-family="Arial, sans-serif" font-size="12">${escapeXml(project.description)} | ${escapeXml(project.period)} | ${escapeXml(project.stack)}</text>
   `;
@@ -162,8 +171,8 @@ export async function GET(request: NextRequest) {
         : ''
     }
 
-    <rect x="24" y="${projectsY}" width="1152" height="${projectsHeight}" rx="16" fill="rgba(15,23,42,0.65)" />
-    <text x="44" y="${projectsY + 22}" fill="#67E8F9" font-family="Arial, sans-serif" font-size="14" font-weight="700">PROJECTS</text>
+    <rect x="24" y="${projectsY}" width="1152" height="${projectsHeight}" rx="16" fill="${tone.panel}" stroke="${tone.panelStroke}" />
+    <text x="44" y="${projectsY + 22}" fill="${tone.accent}" font-family="Arial, sans-serif" font-size="14" font-weight="700">PROJECTS</text>
     ${projectsSvg}
   </svg>
   `;

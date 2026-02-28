@@ -20,6 +20,12 @@ type ProjectRow = {
   stack: string;
 };
 
+const THEMES: Record<string, { darkStart: string; darkEnd: string; accent: string; lightStart: string; lightEnd: string }> = {
+  ocean: { darkStart: '#0B1026', darkEnd: '#020617', accent: '#67E8F9', lightStart: '#E0F2FE', lightEnd: '#F8FAFC' },
+  sunset: { darkStart: '#2D132C', darkEnd: '#120E1A', accent: '#FB7185', lightStart: '#FCE7F3', lightEnd: '#FFF1F2' },
+  forest: { darkStart: '#052E2B', darkEnd: '#021A18', accent: '#34D399', lightStart: '#DCFCE7', lightEnd: '#F0FDF4' },
+};
+
 function parseProjects(input: string): ProjectRow[] {
   return input
     .split('\n')
@@ -35,7 +41,32 @@ function parseProjects(input: string): ProjectRow[] {
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const rawProjects = searchParams.get('projects') || '';
+  const mode = searchParams.get('mode') === 'light' ? 'light' : 'dark';
+  const themeKey = searchParams.get('theme') || 'ocean';
+  const tone = THEMES[themeKey] || THEMES.ocean;
   const projects = parseProjects(rawProjects);
+  const palette =
+    mode === 'light'
+      ? {
+          bgStart: tone.lightStart,
+          bgEnd: tone.lightEnd,
+          frameStroke: 'rgba(15,23,42,0.14)',
+          title: tone.accent,
+          rowFill: 'rgba(255,255,255,0.88)',
+          rowStroke: 'rgba(15,23,42,0.12)',
+          name: '#0F172A',
+          detail: '#334155',
+        }
+      : {
+          bgStart: tone.darkStart,
+          bgEnd: tone.darkEnd,
+          frameStroke: 'rgba(255,255,255,0.12)',
+          title: tone.accent,
+          rowFill: 'rgba(2,6,23,0.46)',
+          rowStroke: 'rgba(255,255,255,0.10)',
+          name: '#F8FAFC',
+          detail: '#CBD5E1',
+        };
 
   const rowHeight = 68;
   const headerHeight = 52;
@@ -47,9 +78,9 @@ export async function GET(request: NextRequest) {
         .map((project, index) => {
           const y = 56 + index * rowHeight;
           return `
-    <rect x="20" y="${y}" width="984" height="58" rx="10" fill="rgba(2,6,23,0.46)" stroke="rgba(255,255,255,0.10)" />
-    <text x="36" y="${y + 22}" fill="#F8FAFC" font-family="Arial, sans-serif" font-size="16" font-weight="700">${escapeXml(project.name)}</text>
-    <text x="36" y="${y + 42}" fill="#CBD5E1" font-family="Arial, sans-serif" font-size="13">${escapeXml(project.description)} | ${escapeXml(project.period)} | ${escapeXml(project.stack)}</text>
+    <rect x="20" y="${y}" width="984" height="58" rx="10" fill="${palette.rowFill}" stroke="${palette.rowStroke}" />
+    <text x="36" y="${y + 22}" fill="${palette.name}" font-family="Arial, sans-serif" font-size="16" font-weight="700">${escapeXml(project.name)}</text>
+    <text x="36" y="${y + 42}" fill="${palette.detail}" font-family="Arial, sans-serif" font-size="13">${escapeXml(project.description)} | ${escapeXml(project.period)} | ${escapeXml(project.stack)}</text>
   `;
         })
         .join('')
@@ -59,14 +90,14 @@ export async function GET(request: NextRequest) {
   <svg width="1024" height="${totalHeight}" viewBox="0 0 1024 ${totalHeight}" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Projects card">
     <defs>
       <linearGradient id="projectsBg" x1="0" y1="0" x2="1" y2="1">
-        <stop offset="0%" stop-color="#0B1026" />
-        <stop offset="100%" stop-color="#020617" />
+        <stop offset="0%" stop-color="${palette.bgStart}" />
+        <stop offset="100%" stop-color="${palette.bgEnd}" />
       </linearGradient>
     </defs>
 
     <rect width="1024" height="${totalHeight}" rx="18" fill="url(#projectsBg)" />
-    <rect x="1" y="1" width="1022" height="${totalHeight - 2}" rx="17" fill="none" stroke="rgba(255,255,255,0.12)" />
-    <text x="20" y="34" fill="#67E8F9" font-family="Arial, sans-serif" font-size="16" font-weight="700">PROJECTS</text>
+    <rect x="1" y="1" width="1022" height="${totalHeight - 2}" rx="17" fill="none" stroke="${palette.frameStroke}" />
+    <text x="20" y="34" fill="${palette.title}" font-family="Arial, sans-serif" font-size="16" font-weight="700">PROJECTS</text>
     ${projectRowsSvg}
   </svg>
   `;

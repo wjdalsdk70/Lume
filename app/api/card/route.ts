@@ -12,6 +12,61 @@ const THEMES: Record<string, Theme> = {
   forest: { bg: '#052E2B', sub: '#86EFAC', accent: '#34D399' },
 };
 
+const LIGHT_THEME_BG: Record<
+  string,
+  {
+    start: string;
+    end: string;
+    role: string;
+    tagline: string;
+    ringOuter: string;
+    ringInner: string;
+    certFill: string;
+    certStroke: string;
+    certText: string;
+  }
+> = {
+  ocean: {
+    start: '#E0F2FE',
+    end: '#F8FAFC',
+    role: '#0F766E',
+    tagline: '#155E75',
+    ringOuter: '#0891B2',
+    ringInner: '#06B6D4',
+    certFill: 'rgba(6,182,212,0.14)',
+    certStroke: 'rgba(8,145,178,0.38)',
+    certText: '#0E7490',
+  },
+  sunset: {
+    start: '#FCE7F3',
+    end: '#FFF1F2',
+    role: '#BE185D',
+    tagline: '#9F1239',
+    ringOuter: '#E11D48',
+    ringInner: '#FB7185',
+    certFill: 'rgba(251,113,133,0.14)',
+    certStroke: 'rgba(225,29,72,0.36)',
+    certText: '#BE123C',
+  },
+  forest: {
+    start: '#DCFCE7',
+    end: '#F0FDF4',
+    role: '#166534',
+    tagline: '#14532D',
+    ringOuter: '#059669',
+    ringInner: '#10B981',
+    certFill: 'rgba(16,185,129,0.14)',
+    certStroke: 'rgba(5,150,105,0.38)',
+    certText: '#047857',
+  },
+};
+
+const DARK_THEME_CERT: Record<string, { fill: string; stroke: string; text: string }> = {
+  ocean: { fill: 'rgba(34,211,238,0.18)', stroke: 'rgba(103,232,249,0.45)', text: '#E0F2FE' },
+  sunset: { fill: 'rgba(251,113,133,0.18)', stroke: 'rgba(244,63,94,0.45)', text: '#FFE4E6' },
+  forest: { fill: 'rgba(52,211,153,0.18)', stroke: 'rgba(16,185,129,0.45)', text: '#DCFCE7' },
+};
+
 function escapeXml(value: string): string {
   return value
     .replace(/&/g, '&amp;')
@@ -37,6 +92,7 @@ export async function GET(request: NextRequest) {
   const role = clampText(searchParams.get('role') || 'Frontend Developer', 72);
   const tagline = searchParams.get('tagline') || 'Building delightful products with code.';
   const themeKey = searchParams.get('theme') || 'ocean';
+  const mode = searchParams.get('mode') === 'light' ? 'light' : 'dark';
 
   const rawSkills = searchParams.get('skills') || '';
   const skills = rawSkills
@@ -51,6 +107,41 @@ export async function GET(request: NextRequest) {
     .filter(Boolean)
     .slice(0, 4);
   const theme = THEMES[themeKey] || THEMES.ocean;
+  const lightTone = LIGHT_THEME_BG[themeKey] || LIGHT_THEME_BG.ocean;
+  const darkCertTone = DARK_THEME_CERT[themeKey] || DARK_THEME_CERT.ocean;
+  const palette = mode === 'light'
+    ? {
+        bgStart: lightTone.start,
+        bgEnd: lightTone.end,
+        frameStroke: 'rgba(15,23,42,0.14)',
+        name: '#0F172A',
+        role: lightTone.role,
+        tagline: lightTone.tagline,
+        ringOuter: lightTone.ringOuter,
+        ringInner: lightTone.ringInner,
+        skillFill: 'rgba(15,23,42,0.08)',
+        skillStroke: 'rgba(15,23,42,0.18)',
+        skillText: '#0F172A',
+        certFill: lightTone.certFill,
+        certStroke: lightTone.certStroke,
+        certText: lightTone.certText,
+      }
+    : {
+        bgStart: theme.bg,
+        bgEnd: '#020617',
+        frameStroke: 'rgba(255,255,255,0.08)',
+        name: '#FFFFFF',
+        role: theme.sub,
+        tagline: '#CBD5E1',
+        ringOuter: theme.accent,
+        ringInner: theme.accent,
+        skillFill: 'rgba(255,255,255,0.12)',
+        skillStroke: 'rgba(255,255,255,0.18)',
+        skillText: '#F8FAFC',
+        certFill: darkCertTone.fill,
+        certStroke: darkCertTone.stroke,
+        certText: darkCertTone.text,
+      };
 
   const safeName = escapeXml(name);
   const safeRole = escapeXml(role);
@@ -70,8 +161,8 @@ export async function GET(request: NextRequest) {
     .map((skill, index) => {
       const x = 40 + index * 98;
       return `
-        <rect x="${x}" y="${skillChipY}" width="90" height="30" rx="15" fill="rgba(255,255,255,0.12)" stroke="rgba(255,255,255,0.18)" />
-        <text x="${x + 45}" y="${skillChipY + 20}" fill="#F8FAFC" font-family="Arial, sans-serif" font-size="12" text-anchor="middle">${escapeXml(skill)}</text>
+        <rect x="${x}" y="${skillChipY}" width="90" height="30" rx="15" fill="${palette.skillFill}" stroke="${palette.skillStroke}" />
+        <text x="${x + 45}" y="${skillChipY + 20}" fill="${palette.skillText}" font-family="Arial, sans-serif" font-size="12" text-anchor="middle">${escapeXml(skill)}</text>
       `;
     })
     .join('');
@@ -79,8 +170,8 @@ export async function GET(request: NextRequest) {
     .map((cert, index) => {
       const x = 40 + index * 112;
       return `
-        <rect x="${x}" y="${certChipY}" width="104" height="28" rx="14" fill="rgba(14,165,233,0.18)" stroke="rgba(125,211,252,0.45)" />
-        <text x="${x + 52}" y="${certChipY + 18}" fill="#E0F2FE" font-family="Arial, sans-serif" font-size="11" text-anchor="middle">${escapeXml(cert)}</text>
+        <rect x="${x}" y="${certChipY}" width="104" height="28" rx="14" fill="${palette.certFill}" stroke="${palette.certStroke}" />
+        <text x="${x + 52}" y="${certChipY + 18}" fill="${palette.certText}" font-family="Arial, sans-serif" font-size="11" text-anchor="middle">${escapeXml(cert)}</text>
       `;
     })
     .join('');
@@ -89,24 +180,24 @@ export async function GET(request: NextRequest) {
   <svg width="1024" height="${cardHeight}" viewBox="0 0 1024 ${cardHeight}" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="README profile card">
     <defs>
       <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
-        <stop offset="0%" stop-color="${theme.bg}" />
-        <stop offset="100%" stop-color="#020617" />
+        <stop offset="0%" stop-color="${palette.bgStart}" />
+        <stop offset="100%" stop-color="${palette.bgEnd}" />
       </linearGradient>
       <linearGradient id="ring" x1="0" y1="0" x2="1" y2="1">
-        <stop offset="0%" stop-color="${theme.accent}" />
+        <stop offset="0%" stop-color="${palette.ringOuter}" />
         <stop offset="100%" stop-color="#ffffff" stop-opacity="0.8" />
       </linearGradient>
     </defs>
 
     <rect width="1024" height="${cardHeight}" rx="24" fill="url(#bg)" />
-    <rect x="16" y="16" width="992" height="${cardHeight - 32}" rx="18" fill="none" stroke="rgba(255,255,255,0.08)" />
+    <rect x="16" y="16" width="992" height="${cardHeight - 32}" rx="18" fill="none" stroke="${palette.frameStroke}" />
 
     <circle cx="900" cy="100" r="56" fill="none" stroke="url(#ring)" stroke-width="8" opacity="0.8" />
-    <circle cx="900" cy="100" r="24" fill="${theme.accent}" opacity="0.9" />
+    <circle cx="900" cy="100" r="24" fill="${palette.ringInner}" opacity="0.9" />
 
-    <text x="40" y="88" fill="#FFFFFF" font-family="Arial, sans-serif" font-size="48" font-weight="700">${safeName}</text>
-    <text x="40" y="130" fill="${theme.sub}" font-family="Arial, sans-serif" font-size="28" font-weight="600">${safeRole}</text>
-    <text x="40" y="164" fill="#CBD5E1" font-family="Arial, sans-serif" font-size="20">${taglineText}</text>
+    <text x="40" y="88" fill="${palette.name}" font-family="Arial, sans-serif" font-size="48" font-weight="700">${safeName}</text>
+    <text x="40" y="130" fill="${palette.role}" font-family="Arial, sans-serif" font-size="28" font-weight="600">${safeRole}</text>
+    <text x="40" y="164" fill="${palette.tagline}" font-family="Arial, sans-serif" font-size="20">${taglineText}</text>
 
     ${skillChips}
     ${certChips}
