@@ -71,6 +71,10 @@ export async function GET(request: NextRequest) {
   const baekjoonUrl = baekjoonId
     ? `https://mazassumnida.wtf/api/v2/generate_badge?${new URLSearchParams({ boj: baekjoonId }).toString()}`
     : '';
+  const rankBadgeProxyUrl = `${origin}/api/image-proxy?${new URLSearchParams({ src: rankBadgeUrl }).toString()}`;
+  const baekjoonProxyUrl = baekjoonUrl
+    ? `${origin}/api/image-proxy?${new URLSearchParams({ src: baekjoonUrl }).toString()}`
+    : '';
   const cardHref = await toDataUri(cardUrl).catch(() => cardUrl);
 
   const hasBaekjoon = Boolean(baekjoonUrl);
@@ -125,7 +129,7 @@ export async function GET(request: NextRequest) {
       y="${badgeY}"
       width="${badgeLeftWidth}"
       height="${badgeHeight}"
-      href="${escapeXml(rankBadgeUrl)}"
+      href="${escapeXml(rankBadgeProxyUrl)}"
       preserveAspectRatio="none"
     />
 
@@ -138,7 +142,7 @@ export async function GET(request: NextRequest) {
       y="${badgeY}"
       width="${badgeRightWidth}"
       height="${badgeHeight}"
-      href="${escapeXml(baekjoonUrl)}"
+      href="${escapeXml(baekjoonProxyUrl)}"
       preserveAspectRatio="xMidYMid meet"
     />`
         : ''
