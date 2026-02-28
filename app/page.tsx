@@ -13,11 +13,59 @@ const themeOptions: Array<{ key: ThemeKey; label: string }> = [
   { key: 'forest', label: 'Forest' },
   { key: 'amber', label: 'Amber' },
 ];
-const PROJECT_THEME_TONE: Record<ThemeKey, { darkTitle: string; lightTitle: string; darkPanel: string; lightPanel: string }> = {
-  ocean: { darkTitle: 'text-cyan-200/80', lightTitle: 'text-cyan-700', darkPanel: 'bg-slate-900/50', lightPanel: 'bg-slate-100/90' },
-  sunset: { darkTitle: 'text-rose-300/80', lightTitle: 'text-rose-700', darkPanel: 'bg-rose-950/30', lightPanel: 'bg-rose-50/90' },
-  forest: { darkTitle: 'text-emerald-300/80', lightTitle: 'text-emerald-700', darkPanel: 'bg-emerald-950/30', lightPanel: 'bg-emerald-50/90' },
-  amber: { darkTitle: 'text-amber-300/80', lightTitle: 'text-amber-700', darkPanel: 'bg-amber-950/20', lightPanel: 'bg-amber-50/90' },
+const PROJECT_THEME_TONE: Record<
+  ThemeKey,
+  {
+    darkTitle: string;
+    lightTitle: string;
+    darkPanel: string;
+    lightPanel: string;
+    darkRow: string;
+    lightRow: string;
+    darkRowBorder: string;
+    lightRowBorder: string;
+  }
+> = {
+  ocean: {
+    darkTitle: 'text-cyan-200/80',
+    lightTitle: 'text-cyan-700',
+    darkPanel: 'bg-slate-900/65',
+    lightPanel: 'bg-slate-200',
+    darkRow: 'bg-cyan-900/45',
+    lightRow: 'bg-cyan-50',
+    darkRowBorder: 'border-cyan-400/30',
+    lightRowBorder: 'border-cyan-200',
+  },
+  sunset: {
+    darkTitle: 'text-rose-300/80',
+    lightTitle: 'text-rose-700',
+    darkPanel: 'bg-rose-950/45',
+    lightPanel: 'bg-rose-100',
+    darkRow: 'bg-rose-900/45',
+    lightRow: 'bg-rose-50',
+    darkRowBorder: 'border-rose-400/30',
+    lightRowBorder: 'border-rose-200',
+  },
+  forest: {
+    darkTitle: 'text-emerald-300/80',
+    lightTitle: 'text-emerald-700',
+    darkPanel: 'bg-emerald-950/45',
+    lightPanel: 'bg-emerald-100',
+    darkRow: 'bg-emerald-900/45',
+    lightRow: 'bg-emerald-50',
+    darkRowBorder: 'border-emerald-400/30',
+    lightRowBorder: 'border-emerald-200',
+  },
+  amber: {
+    darkTitle: 'text-amber-300/80',
+    lightTitle: 'text-amber-700',
+    darkPanel: 'bg-amber-950/35',
+    lightPanel: 'bg-amber-100',
+    darkRow: 'bg-amber-900/40',
+    lightRow: 'bg-amber-50',
+    darkRowBorder: 'border-amber-400/30',
+    lightRowBorder: 'border-amber-200',
+  },
 };
 const FIXED_BASE_URL = 'https://lume-self.vercel.app';
 
@@ -313,20 +361,20 @@ export default function Home() {
   const githubButtonClass = 'inline-flex w-full items-center justify-center rounded-xl border border-[#30363d] bg-[#24292f] px-4 py-3 font-semibold text-white transition hover:bg-[#32383f]';
   const githubProfileUrl = `https://github.com/${encodeURIComponent(githubUsername.trim())}`;
   const projectPanelClass = isCardLight
-    ? `border border-slate-300 ${projectTone.lightPanel}`
+    ? projectTone.lightPanel
     : isUiLightCardDark
-      ? 'border border-slate-700 bg-slate-900'
-      : `border border-white/10 ${projectTone.darkPanel}`;
+      ? 'bg-slate-900'
+      : projectTone.darkPanel;
   const projectTitleClass = isCardLight
     ? projectTone.lightTitle
     : isUiLightCardDark
       ? 'text-slate-200'
       : projectTone.darkTitle;
   const projectRowClass = isCardLight
-    ? 'border border-slate-300 bg-white'
+    ? `border ${projectTone.lightRowBorder} ${projectTone.lightRow}`
     : isUiLightCardDark
       ? 'border border-slate-700 bg-slate-950'
-      : 'border border-white/10 bg-slate-950/45';
+      : `border ${projectTone.darkRowBorder} ${projectTone.darkRow}`;
   const projectNameClass = isCardLight ? 'text-slate-900' : 'text-slate-100';
   const projectDescClass = isCardLight ? 'text-slate-700' : 'text-slate-300';
   const projectMetaClass = isCardLight ? 'text-slate-600' : 'text-slate-400';
@@ -530,7 +578,7 @@ export default function Home() {
             </div>
             <div
               className={`rounded-xl p-4 ${projectPanelClass}`}
-              style={isUiLightCardDark ? { backgroundColor: '#0f172a', borderColor: '#334155' } : undefined}
+              style={isUiLightCardDark ? { backgroundColor: '#0f172a' } : undefined}
             >
               <p className={`mb-3 text-xs uppercase tracking-[0.14em] ${projectTitleClass}`}>Projects</p>
               <div className="space-y-2">
