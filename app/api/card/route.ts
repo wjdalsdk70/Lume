@@ -41,30 +41,39 @@ export async function GET(request: NextRequest) {
     .split(',')
     .map((skill) => clampText(skill, 22))
     .filter(Boolean)
-    .slice(0, 7);
-  const techSpec = clampText(searchParams.get('techSpec') || 'Next.js 16, React 19, TypeScript', 180);
-  const projects = clampText(searchParams.get('projects') || 'README Styler, Dashboard UI', 180);
-
+    .slice(0, 5);
+  const rawCerts = searchParams.get('certs') || '';
+  const certs = rawCerts
+    .split(',')
+    .map((cert) => clampText(cert, 18))
+    .filter(Boolean)
+    .slice(0, 4);
   const theme = THEMES[themeKey] || THEMES.ocean;
 
   const safeName = escapeXml(name);
   const safeRole = escapeXml(role);
   const safeTagline = escapeXml(tagline);
-  const safeTechSpec = escapeXml(techSpec);
-  const safeProjects = escapeXml(projects);
-
   const skillChips = skills
     .map((skill, index) => {
       const x = 40 + index * 98;
       return `
-        <rect x="${x}" y="246" width="90" height="30" rx="15" fill="rgba(255,255,255,0.12)" stroke="rgba(255,255,255,0.18)" />
-        <text x="${x + 45}" y="266" fill="#F8FAFC" font-family="Arial, sans-serif" font-size="12" text-anchor="middle">${escapeXml(skill)}</text>
+        <rect x="${x}" y="186" width="90" height="30" rx="15" fill="rgba(255,255,255,0.12)" stroke="rgba(255,255,255,0.18)" />
+        <text x="${x + 45}" y="206" fill="#F8FAFC" font-family="Arial, sans-serif" font-size="12" text-anchor="middle">${escapeXml(skill)}</text>
+      `;
+    })
+    .join('');
+  const certChips = certs
+    .map((cert, index) => {
+      const x = 40 + index * 112;
+      return `
+        <rect x="${x}" y="224" width="104" height="28" rx="14" fill="rgba(14,165,233,0.18)" stroke="rgba(125,211,252,0.45)" />
+        <text x="${x + 52}" y="242" fill="#E0F2FE" font-family="Arial, sans-serif" font-size="11" text-anchor="middle">${escapeXml(cert)}</text>
       `;
     })
     .join('');
 
   const svg = `
-  <svg width="1024" height="440" viewBox="0 0 1024 440" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="README profile card">
+  <svg width="1024" height="320" viewBox="0 0 1024 320" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="README profile card">
     <defs>
       <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
         <stop offset="0%" stop-color="${theme.bg}" />
@@ -76,26 +85,18 @@ export async function GET(request: NextRequest) {
       </linearGradient>
     </defs>
 
-    <rect width="1024" height="440" rx="24" fill="url(#bg)" />
-    <rect x="16" y="16" width="992" height="408" rx="18" fill="none" stroke="rgba(255,255,255,0.08)" />
+    <rect width="1024" height="320" rx="24" fill="url(#bg)" />
+    <rect x="16" y="16" width="992" height="288" rx="18" fill="none" stroke="rgba(255,255,255,0.08)" />
 
     <circle cx="900" cy="100" r="56" fill="none" stroke="url(#ring)" stroke-width="8" opacity="0.8" />
     <circle cx="900" cy="100" r="24" fill="${theme.accent}" opacity="0.9" />
 
-    <text x="40" y="92" fill="#E2E8F0" font-family="Arial, sans-serif" font-size="22" opacity="0.88">README STYLER</text>
-    <text x="40" y="150" fill="#FFFFFF" font-family="Arial, sans-serif" font-size="48" font-weight="700">${safeName}</text>
-    <text x="40" y="192" fill="${theme.sub}" font-family="Arial, sans-serif" font-size="28" font-weight="600">${safeRole}</text>
-    <text x="40" y="228" fill="#CBD5E1" font-family="Arial, sans-serif" font-size="20">${safeTagline}</text>
+    <text x="40" y="88" fill="#FFFFFF" font-family="Arial, sans-serif" font-size="48" font-weight="700">${safeName}</text>
+    <text x="40" y="130" fill="${theme.sub}" font-family="Arial, sans-serif" font-size="28" font-weight="600">${safeRole}</text>
+    <text x="40" y="164" fill="#CBD5E1" font-family="Arial, sans-serif" font-size="20">${safeTagline}</text>
 
     ${skillChips}
-
-    <rect x="40" y="302" width="944" height="52" rx="14" fill="rgba(15,23,42,0.45)" stroke="rgba(255,255,255,0.1)" />
-    <text x="56" y="334" fill="${theme.sub}" font-family="Arial, sans-serif" font-size="16" font-weight="700">TECH SPEC</text>
-    <text x="190" y="334" fill="#E2E8F0" font-family="Arial, sans-serif" font-size="15">${safeTechSpec}</text>
-
-    <rect x="40" y="366" width="944" height="52" rx="14" fill="rgba(15,23,42,0.45)" stroke="rgba(255,255,255,0.1)" />
-    <text x="56" y="398" fill="${theme.sub}" font-family="Arial, sans-serif" font-size="16" font-weight="700">PROJECTS</text>
-    <text x="176" y="398" fill="#E2E8F0" font-family="Arial, sans-serif" font-size="15">${safeProjects}</text>
+    ${certChips}
   </svg>
   `;
 
