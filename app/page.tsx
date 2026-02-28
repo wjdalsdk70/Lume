@@ -162,15 +162,8 @@ export default function Home() {
   const [theme, setTheme] = useState<ThemeKey>('ocean');
 
   const [githubUsername, setGithubUsername] = useState('mintydev');
-  const [rankTier] = useState('GOLD');
-  const [rankScore] = useState('1580');
-  const [badgeRank] = useState('412');
-  const [badgeTop] = useState('12');
-  const [badgeDiff] = useState('+42');
-  const [externalBadgeUrl, setExternalBadgeUrl] = useState(
-    'https://www.git-ranker.com/api/v1/badges/MDQ6VXNlcjQ4ODMwNTA5',
-  );
-  const [baekjoonId, setBaekjoonId] = useState('wjdalsdk70');
+  const [externalBadgeUrl, setExternalBadgeUrl] = useState('');
+  const [baekjoonId, setBaekjoonId] = useState('');
 
   const [projectRowsInput, setProjectRowsInput] = useState(
     'README Styler|GitHub README 카드 생성 서비스|2026.02 - 진행중|Next.js,TypeScript,Tailwind|github.com/mintydev/readme-styler|readme-styler.vercel.app\nPortfolio 2.0|개인 포트폴리오 리뉴얼|2025.11 - 2026.01|React,Vite,Firebase|github.com/mintydev/portfolio-2|minty.dev',
@@ -249,50 +242,43 @@ export default function Home() {
     return `/api/card?${params.toString()}`;
   }, [cardMode, name, projectRowsInput, role, skills, tagline, theme]);
 
-  const badgePath = useMemo(() => {
-    const params = new URLSearchParams({
-      username: githubUsername,
-      tier: rankTier,
-      mode: cardMode,
-      score: rankScore,
-      rank: badgeRank,
-      top: badgeTop,
-      diff: badgeDiff,
-    });
-
-    return `/api/badge?${params.toString()}`;
-  }, [badgeDiff, badgeRank, badgeTop, cardMode, githubUsername, rankScore, rankTier]);
-
   const baekjoonCardUrl = useMemo(() => {
     const trimmed = normalizeBaekjoonId(baekjoonId);
     if (!trimmed) return '';
     const params = new URLSearchParams({ boj: trimmed });
     return `https://mazassumnida.wtf/api/v2/generate_badge?${params.toString()}`;
   }, [baekjoonId]);
+  const normalizedBadgeUrl = externalBadgeUrl.trim();
+  const hasRankBadge = Boolean(normalizedBadgeUrl);
+  const hasBaekjoonBadge = Boolean(baekjoonCardUrl);
+  const hasAnyBadge = hasRankBadge || hasBaekjoonBadge;
 
   const projectRows = useMemo(() => parseProjectRows(projectRowsInput), [projectRowsInput]);
 
   const githubReadmeSnippet = useMemo(() => {
-    const resolvedBadgeRouteId = session?.user?.nodeId || 'MDQ6VXNlcjQ4ODMwNTA5';
     const profileCardUrl = `${FIXED_BASE_URL}${cardPath}`;
-    const rankBadgeUrl = externalBadgeUrl.trim() || `https://www.git-ranker.com/api/v1/badges/${encodeURIComponent(resolvedBadgeRouteId)}`;
     const projectsCardUrl = `${FIXED_BASE_URL}/api/projects-card?${new URLSearchParams({ projects: projectRowsInput, mode: cardMode, theme }).toString()}`;
+    const badgeLines = hasAnyBadge
+      ? [
+          '<p align="center">',
+          ...(hasRankBadge ? [`  <a href="https://www.git-ranker.com"><img src="${normalizedBadgeUrl}" alt="Git Rank Badge" /></a>`] : []),
+          ...(hasBaekjoonBadge ? [`  <img src="${baekjoonCardUrl}" alt="${baekjoonId} solved.ac profile" />`] : []),
+          '</p>',
+          '',
+        ]
+      : [];
 
     return [
       '<p align="center">',
       `  <img src="${profileCardUrl}" alt="${name} README Card" />`,
       '</p>',
       '',
-      '<p align="center">',
-      `  <a href="https://www.git-ranker.com"><img src="${rankBadgeUrl}" alt="Git Rank Badge" /></a>`,
-      ...(baekjoonCardUrl ? [`  <img src="${baekjoonCardUrl}" alt="${baekjoonId} solved.ac profile" />`] : []),
-      '</p>',
-      '',
+      ...badgeLines,
       '<p align="center">',
       `  <img src="${projectsCardUrl}" alt="${name} Projects Card" />`,
       '</p>',
     ].join('\n');
-  }, [baekjoonCardUrl, baekjoonId, cardMode, cardPath, externalBadgeUrl, name, projectRowsInput, session?.user?.nodeId, theme]);
+  }, [baekjoonCardUrl, baekjoonId, cardMode, cardPath, hasAnyBadge, hasBaekjoonBadge, hasRankBadge, name, normalizedBadgeUrl, projectRowsInput, theme]);
 
   async function copyGithubReadmeSnippet() {
     await navigator.clipboard.writeText(githubReadmeSnippet);
@@ -422,6 +408,10 @@ export default function Home() {
     ? 'border border-slate-300 bg-white text-slate-700 hover:bg-slate-100'
     : 'border border-white/20 bg-slate-900/40 text-slate-200 hover:bg-slate-800/70';
   const previewImageClass = 'block h-auto w-full rounded-xl';
+  const singleBadgeClass = 'block h-[156px] w-full max-w-[560px] rounded-xl object-contain';
+  const optionalFieldCtaClass = isUiLight
+    ? 'mt-1 inline-flex items-center rounded-md border border-slate-300 bg-white px-2 py-1 text-[11px] font-semibold text-slate-700 hover:bg-slate-100'
+    : 'mt-1 inline-flex items-center rounded-md border border-white/20 bg-slate-900/40 px-2 py-1 text-[11px] font-semibold text-slate-200 hover:bg-slate-800/70';
 
   return (
     <main className={shellClass}>
@@ -568,7 +558,7 @@ export default function Home() {
                 value={tagline}
                 onChange={(e) => setTagline(e.target.value)}
                 placeholder="Tagline (줄바꿈 가능)"
-                rows={2}
+                rows={4}
                 className={inputClass}
               />
             </label>
@@ -579,16 +569,21 @@ export default function Home() {
             </label>
             <label className={`block border-t pt-4 ${sectionDividerClass}`}>
               <p className={fieldLabelClass}>Git Ranker 배지 URL (선택)</p>
-              <p className={fieldHelpClass}>외부 배지를 쓰고 싶을 때 URL을 입력하세요. 비우면 기본 배지를 사용합니다.</p>
+              <p className={fieldHelpClass}>URL을 입력하면 배지를 표시합니다. 비우면 배지를 숨깁니다.</p>
               <input
                 value={externalBadgeUrl}
                 onChange={(e) => setExternalBadgeUrl(e.target.value)}
                 placeholder="Git Ranker Badge URL (optional)"
                 className={inputClass}
               />
+              {!hasRankBadge ? (
+                <a href="https://www.git-ranker.com" target="_blank" rel="noreferrer" className={optionalFieldCtaClass}>
+                  Git Ranker 사이트 이동
+                </a>
+              ) : null}
             </label>
             <label className="block">
-              <p className={fieldLabelClass}>백준 ID</p>
+              <p className={fieldLabelClass}>백준 ID (선택)</p>
               <p className={fieldHelpClass}>solved.ac/백준 카드에 사용할 본인 ID를 입력하세요.</p>
               <input
                 value={baekjoonId}
@@ -596,6 +591,11 @@ export default function Home() {
                 placeholder="Baekjoon ID"
                 className={inputClass}
               />
+              {!hasBaekjoonBadge ? (
+                <a href="https://solved.ac" target="_blank" rel="noreferrer" className={optionalFieldCtaClass}>
+                  solved.ac 사이트 이동
+                </a>
+              ) : null}
             </label>
 
             <label className={`block border-t pt-4 ${sectionDividerClass}`}>
@@ -605,7 +605,7 @@ export default function Home() {
                 value={projectRowsInput}
                 onChange={(e) => setProjectRowsInput(e.target.value)}
                 placeholder="프로젝트명|소개|기간|스택|레포 링크(선택)|사이트 링크(선택)"
-                rows={4}
+                rows={8}
                 className={`${inputClass} font-mono text-sm`}
               />
             </label>
@@ -633,19 +633,28 @@ export default function Home() {
           <div className={previewBoxClass}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={cardPath} alt="README Card Preview" className={previewImageClass} onLoad={() => setPreviewFailed(false)} onError={() => setPreviewFailed(true)} />
-            <div className="grid gap-3 md:grid-cols-2">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={externalBadgeUrl.trim() || badgePath}
-                alt="Rank Badge Preview"
-                className={previewImageClass}
-                onError={() => setPreviewFailed(true)}
-              />
-              {baekjoonCardUrl ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={baekjoonCardUrl} alt="Baekjoon Card Preview" className="block h-auto w-full rounded-xl" onError={() => setPreviewFailed(true)} />
-              ) : null}
-            </div>
+            {hasAnyBadge ? (
+              <div className={`grid gap-3 ${hasRankBadge && hasBaekjoonBadge ? 'md:grid-cols-2' : 'place-items-center'}`}>
+                {hasRankBadge ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={normalizedBadgeUrl}
+                    alt="Rank Badge Preview"
+                    className={hasRankBadge && hasBaekjoonBadge ? previewImageClass : singleBadgeClass}
+                    onError={() => setPreviewFailed(true)}
+                  />
+                ) : null}
+                {hasBaekjoonBadge ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={baekjoonCardUrl}
+                    alt="Baekjoon Card Preview"
+                    className={hasRankBadge && hasBaekjoonBadge ? 'block h-auto w-full rounded-xl' : singleBadgeClass}
+                    onError={() => setPreviewFailed(true)}
+                  />
+                ) : null}
+              </div>
+            ) : null}
             <div
               className={`rounded-xl p-4 ${projectPanelClass}`}
               style={isUiLightCardDark ? { backgroundColor: '#0f172a' } : undefined}
@@ -655,12 +664,17 @@ export default function Home() {
                 {projectRows.map((project, index) => (
                   <div
                     key={`${project.name}-${index}`}
-                    className={`min-h-[86px] rounded-lg px-3 py-2 ${projectRowClass}`}
+                    className={`relative min-h-[86px] rounded-lg px-3 py-2 ${projectRowClass}`}
                     style={isUiLightCardDark ? { backgroundColor: '#020617', borderColor: '#334155' } : undefined}
                   >
-                    <div className="flex items-center justify-between gap-2">
-                      <p className={`min-w-0 flex-1 truncate text-sm font-semibold ${projectNameClass}`}>{project.name}</p>
-                      <div className="flex w-[118px] shrink-0 items-center justify-end gap-1">
+                    <div className="pr-[72px]">
+                      <p className={`min-w-0 truncate text-sm font-semibold ${projectNameClass}`}>{project.name}</p>
+                      <p className={`text-xs ${projectDescClass}`}>{project.description}</p>
+                      <p className={`mt-1 text-[11px] ${projectMetaClass}`}>
+                        {project.period} | {project.stack}
+                      </p>
+                    </div>
+                    <div className="absolute right-3 top-1/2 flex w-[56px] -translate-y-1/2 flex-col items-end gap-1">
                         {project.repoLink ? (
                           <a
                             href={project.repoLink}
@@ -694,12 +708,7 @@ export default function Home() {
                         ) : (
                           <span className="invisible inline-flex h-6 w-[56px] items-center justify-center gap-1 rounded-md px-2 py-1 text-[11px] font-semibold">Site</span>
                         )}
-                      </div>
                     </div>
-                    <p className={`text-xs ${projectDescClass}`}>{project.description}</p>
-                    <p className={`mt-1 text-[11px] ${projectMetaClass}`}>
-                      {project.period} | {project.stack}
-                    </p>
                   </div>
                 ))}
               </div>
