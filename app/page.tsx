@@ -30,10 +30,6 @@ function parseProjectRows(input: string): ProjectRow[] {
     .slice(0, 8);
 }
 
-function escapeMd(value: string): string {
-  return value.replace(/\|/g, '\\|');
-}
-
 export default function Home() {
   const [name, setName] = useState('Minty Kim');
   const [role, setRole] = useState('Frontend Engineer');
@@ -149,28 +145,14 @@ export default function Home() {
   }, [badgeDiff, badgeRank, badgeRouteId, badgeTop, githubUsername, rankScore, rankTier]);
 
   const githubReadmeSnippet = useMemo(() => {
-    const profileCardUrl = `${FIXED_BASE_URL}${cardPath}`;
-    const badgeUrl = `${FIXED_BASE_URL}${directBadgePath}`;
-    const projectRowsMd = projectRows.map((project) => {
-      return `| ${escapeMd(project.name)} | ${escapeMd(project.description)} | ${escapeMd(project.period)} | ${escapeMd(project.stack)} |`;
-    });
+    const previewImageUrl = `${FIXED_BASE_URL}${previewPath}`;
 
     return [
       '<p align="center">',
-      `  <img src="${profileCardUrl}" alt="${name} README Card" />`,
+      `  <img src="${previewImageUrl}" alt="${name} README Preview Card" />`,
       '</p>',
-      '',
-      '<p align="center">',
-      `  <a href="${FIXED_BASE_URL}"><img src="${badgeUrl}" alt="Git Rank Badge" /></a>`,
-      ...(baekjoonCardUrl ? [`  <img src="${baekjoonCardUrl}" alt="${baekjoonId} solved.ac profile" />`] : []),
-      '</p>',
-      '',
-      '## 프로젝트',
-      '| 프로젝트 이름 | 소개 | 기간 | 스택 |',
-      '| --- | --- | --- | --- |',
-      ...projectRowsMd,
     ].join('\n');
-  }, [baekjoonCardUrl, baekjoonId, cardPath, directBadgePath, name, projectRows]);
+  }, [name, previewPath]);
 
   async function downloadPreviewImage(format: 'svg' | 'png') {
     setDownloadingFormat(format);
@@ -374,7 +356,6 @@ export default function Home() {
           >
             {copiedReadme ? 'README Copied' : 'Copy GitHub README Snippet'}
           </button>
-          <p className="mt-3 text-xs text-slate-400">도메인은 {FIXED_BASE_URL} 로 고정되어 있습니다.</p>
         </section>
       </div>
     </main>
