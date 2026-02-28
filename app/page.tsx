@@ -28,6 +28,20 @@ type ProjectRow = {
   stack: string;
 };
 
+type SavedBuilderState = {
+  uiMode: UiMode;
+  name: string;
+  role: string;
+  tagline: string;
+  skills: string;
+  theme: ThemeKey;
+  githubUsername: string;
+  externalBadgeUrl: string;
+  baekjoonId: string;
+  certBadgesInput: string;
+  projectRowsInput: string;
+};
+
 function parseProjectRows(input: string): ProjectRow[] {
   return input
     .split('\n')
@@ -94,6 +108,9 @@ export default function Home() {
   const [copiedReadme, setCopiedReadme] = useState(false);
   const [previewFailed, setPreviewFailed] = useState(false);
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
+  const [hasLoadedProfileState, setHasLoadedProfileState] = useState(false);
+  const [isSavingSettings, setIsSavingSettings] = useState(false);
+  const [saveNotice, setSaveNotice] = useState('');
 
   useEffect(() => {
     if (!session?.user?.username) return;
@@ -101,6 +118,52 @@ export default function Home() {
       setGithubUsername(session.user.username);
     }
   }, [githubUsername, session?.user?.username]);
+
+  useEffect(() => {
+    if (!session?.user?.nodeId) {
+      setHasLoadedProfileState(true);
+      return;
+    }
+
+    let isMounted = true;
+
+    async function loadSettings() {
+      try {
+        const response = await fetch('/api/user-settings', { cache: 'no-store' });
+        if (!response.ok) {
+          setHasLoadedProfileState(true);
+          return;
+        }
+
+        const data = (await response.json()) as { settings?: Partial<SavedBuilderState> };
+        const saved = data.settings;
+        if (!saved || !isMounted) {
+          setHasLoadedProfileState(true);
+          return;
+        }
+
+        if (saved.uiMode === 'light' || saved.uiMode === 'dark') setUiMode(saved.uiMode);
+        if (typeof saved.name === 'string') setName(saved.name);
+        if (typeof saved.role === 'string') setRole(saved.role);
+        if (typeof saved.tagline === 'string') setTagline(saved.tagline);
+        if (typeof saved.skills === 'string') setSkills(saved.skills);
+        if (saved.theme && themeOptions.some((option) => option.key === saved.theme)) setTheme(saved.theme);
+        if (typeof saved.githubUsername === 'string') setGithubUsername(saved.githubUsername);
+        if (typeof saved.externalBadgeUrl === 'string') setExternalBadgeUrl(saved.externalBadgeUrl);
+        if (typeof saved.baekjoonId === 'string') setBaekjoonId(normalizeBaekjoonId(saved.baekjoonId));
+        if (typeof saved.certBadgesInput === 'string') setCertBadgesInput(saved.certBadgesInput);
+        if (typeof saved.projectRowsInput === 'string') setProjectRowsInput(saved.projectRowsInput);
+      } finally {
+        if (isMounted) setHasLoadedProfileState(true);
+      }
+    }
+
+    loadSettings();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [session?.user?.nodeId]);
 
   const cardPath = useMemo(() => {
     const params = new URLSearchParams({
@@ -204,20 +267,6 @@ export default function Home() {
     ].join('\n');
   }, [baekjoonCardUrl, baekjoonId, cardMode, cardPath, externalBadgeUrl, name, projectRowsInput, session?.user?.nodeId, theme]);
 
-  const directBadgePath = useMemo(() => {
-    const resolvedBadgeRouteId = session?.user?.nodeId || 'MDQ6VXNlcjQ4ODMwNTA5';
-    const params = new URLSearchParams({
-      username: githubUsername,
-      tier: rankTier,
-      mode: cardMode,
-      score: rankScore,
-      rank: badgeRank,
-      top: badgeTop,
-      diff: badgeDiff,
-    });
-    return `/api/v1/badges/${encodeURIComponent(resolvedBadgeRouteId)}?${params.toString()}`;
-  }, [badgeDiff, badgeRank, badgeTop, cardMode, githubUsername, rankScore, rankTier, session?.user?.nodeId]);
-
   async function downloadPreviewImage(format: 'svg' | 'png') {
     setDownloadingFormat(format);
     try {
@@ -286,8 +335,47 @@ export default function Home() {
     setTimeout(() => setCopiedReadme(false), 1200);
   }
 
-  function openBadgeRoute() {
-    window.open(`${FIXED_BASE_URL}${directBadgePath}`, '_blank', 'noopener,noreferrer');
+  async function saveUserSettings() {
+    if (!session?.user?.nodeId) {
+      setSaveNotice('로그인 후 저장할 수 있습니다.');
+      return;
+    }
+    if (!hasLoadedProfileState) {
+      setSaveNotice('설정 로딩 중입니다. 잠시 후 다시 시도해 주세요.');
+      return;
+    }
+
+    setIsSavingSettings(true);
+    setSaveNotice('');
+    const payload: SavedBuilderState = {
+      uiMode,
+      name,
+      role,
+      tagline,
+      skills,
+      theme,
+      githubUsername,
+      externalBadgeUrl,
+      baekjoonId: normalizeBaekjoonId(baekjoonId),
+      certBadgesInput,
+      projectRowsInput,
+    };
+
+    try {
+      const response = await fetch('/api/user-settings', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      if (!response.ok) {
+        throw new Error('save failed');
+      }
+      setSaveNotice('저장되었습니다.');
+    } catch {
+      setSaveNotice('저장에 실패했습니다. 다시 시도해 주세요.');
+    } finally {
+      setIsSavingSettings(false);
+    }
   }
 
   const isCardLight = cardMode === 'light';
@@ -504,6 +592,23 @@ export default function Home() {
               rows={4}
               className={`${inputClass} font-mono text-sm`}
             />
+            <div className="grid gap-2 sm:grid-cols-[1fr_auto]">
+              <p className={`text-xs ${isUiLight ? 'text-slate-600' : 'text-slate-300'}`}>
+                {saveNotice || (session?.user?.nodeId ? '입력값을 수정한 뒤 저장 버튼을 눌러 반영하세요.' : '로그인 후 사용자별 설정 저장이 가능합니다.')}
+              </p>
+              <button
+                type="button"
+                onClick={saveUserSettings}
+                disabled={!session?.user?.nodeId || isSavingSettings || !hasLoadedProfileState}
+                className={`rounded-xl px-4 py-2.5 text-sm font-semibold transition ${
+                  isUiLight
+                    ? 'border border-slate-300 bg-white text-slate-900 hover:bg-slate-100 disabled:opacity-50'
+                    : 'border border-white/25 bg-slate-900/45 text-slate-100 hover:bg-slate-800/70 disabled:opacity-50'
+                }`}
+              >
+                {isSavingSettings ? '저장 중...' : '저장'}
+              </button>
+            </div>
           </div>
         </section>
 
@@ -565,21 +670,12 @@ export default function Home() {
               {downloadingFormat === 'png' ? 'Downloading PNG...' : 'Download PNG'}
             </button>
           </div>
-          <div className="mt-3 grid gap-3 sm:grid-cols-2">
-            <button
-              type="button"
-              onClick={openBadgeRoute}
-              className={`w-full ${outlineActionBtnClass}`}
-            >
-              Open Badge Route
-            </button>
-            <button
-              onClick={copyGithubReadmeSnippet}
-              className={`w-full ${primaryActionBtnClass.replace('mt-3 ', '')}`}
-            >
-              {copiedReadme ? 'README Copied' : 'Copy GitHub README Snippet'}
-            </button>
-          </div>
+          <button
+            onClick={copyGithubReadmeSnippet}
+            className={primaryActionBtnClass}
+          >
+            {copiedReadme ? 'README Copied' : 'Copy GitHub README Snippet'}
+          </button>
         </section>
       </div>
     </main>
