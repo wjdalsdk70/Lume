@@ -13,6 +13,11 @@ function escapeXml(value: string): string {
     .replace(/'/g, '&apos;');
 }
 
+function splitMultiline(value: string): string[] {
+  const lines = value.split(/\r?\n/);
+  return lines.length ? lines : [''];
+}
+
 async function toDataUri(imageUrl: string): Promise<string> {
   const response = await fetch(imageUrl, { cache: 'no-store' });
   if (!response.ok) {
@@ -31,7 +36,7 @@ export async function GET(request: NextRequest) {
 
   const name = clampText(searchParams.get('name') || 'Minty Kim', 58);
   const role = clampText(searchParams.get('role') || 'Frontend Engineer', 72);
-  const tagline = clampText(searchParams.get('tagline') || 'Designing clean UX and robust web apps.', 130);
+  const tagline = searchParams.get('tagline') || 'Designing clean UX and robust web apps.';
   const skills = clampText(searchParams.get('skills') || 'TypeScript,React,Next.js,Tailwind', 180);
   const certs = clampText(searchParams.get('certs') || '', 240);
   const theme = clampText(searchParams.get('theme') || 'ocean', 12);
@@ -78,8 +83,17 @@ export async function GET(request: NextRequest) {
   const cardHref = await toDataUri(cardUrl).catch(() => cardUrl);
 
   const hasBaekjoon = Boolean(baekjoonUrl);
+  const certCount = certs
+    .split(',')
+    .map((cert) => cert.trim())
+    .filter(Boolean).length;
+  const taglineLineCount = splitMultiline(tagline).length;
+  const taglineEndY = 164 + (taglineLineCount - 1) * 24;
+  const skillChipY = taglineEndY + 30;
+  const certChipY = skillChipY + 38;
+  const contentBottomY = certCount > 0 ? certChipY + 28 : skillChipY + 30;
   const cardY = 24;
-  const cardHeight = 320;
+  const cardHeight = Math.max(320, contentBottomY + 26);
   const badgeY = cardY + cardHeight + 20;
   const badgeHeight = 156;
   const badgeLeftX = 24;

@@ -250,7 +250,13 @@ export default function Home() {
           <div className="grid gap-4">
             <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Name" className="rounded-xl border border-white/15 bg-slate-900/60 px-4 py-3 outline-none ring-cyan-300/50 transition focus:ring" />
             <input value={role} onChange={(e) => setRole(e.target.value)} placeholder="Role" className="rounded-xl border border-white/15 bg-slate-900/60 px-4 py-3 outline-none ring-cyan-300/50 transition focus:ring" />
-            <input value={tagline} onChange={(e) => setTagline(e.target.value)} placeholder="Tagline" className="rounded-xl border border-white/15 bg-slate-900/60 px-4 py-3 outline-none ring-cyan-300/50 transition focus:ring" />
+            <textarea
+              value={tagline}
+              onChange={(e) => setTagline(e.target.value)}
+              placeholder="Tagline (줄바꿈 가능)"
+              rows={3}
+              className="rounded-xl border border-white/15 bg-slate-900/60 px-4 py-3 outline-none ring-cyan-300/50 transition focus:ring"
+            />
             <input value={skills} onChange={(e) => setSkills(e.target.value)} placeholder="Skills (comma separated)" className="rounded-xl border border-white/15 bg-slate-900/60 px-4 py-3 outline-none ring-cyan-300/50 transition focus:ring" />
 
             <select value={theme} onChange={(e) => setTheme(e.target.value as ThemeKey)} className="rounded-xl border border-white/15 bg-slate-900/60 px-4 py-3 outline-none ring-cyan-300/50 transition focus:ring">
