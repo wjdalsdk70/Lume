@@ -10,6 +10,7 @@ const THEMES: Record<string, Theme> = {
   ocean: { bg: '#0B1026', sub: '#95A8FF', accent: '#22D3EE' },
   sunset: { bg: '#2D132C', sub: '#F9A8D4', accent: '#FB7185' },
   forest: { bg: '#052E2B', sub: '#86EFAC', accent: '#34D399' },
+  amber: { bg: '#2A1A05', sub: '#FDE68A', accent: '#F59E0B' },
 };
 
 const LIGHT_THEME_BG: Record<
@@ -59,12 +60,31 @@ const LIGHT_THEME_BG: Record<
     certStroke: 'rgba(5,150,105,0.38)',
     certText: '#047857',
   },
+  amber: {
+    start: '#FEF3C7',
+    end: '#FFFBEB',
+    role: '#B45309',
+    tagline: '#92400E',
+    ringOuter: '#D97706',
+    ringInner: '#F59E0B',
+    certFill: 'rgba(245,158,11,0.16)',
+    certStroke: 'rgba(217,119,6,0.38)',
+    certText: '#92400E',
+  },
 };
 
 const DARK_THEME_CERT: Record<string, { fill: string; stroke: string; text: string }> = {
   ocean: { fill: 'rgba(34,211,238,0.18)', stroke: 'rgba(103,232,249,0.45)', text: '#E0F2FE' },
   sunset: { fill: 'rgba(251,113,133,0.18)', stroke: 'rgba(244,63,94,0.45)', text: '#FFE4E6' },
   forest: { fill: 'rgba(52,211,153,0.18)', stroke: 'rgba(16,185,129,0.45)', text: '#DCFCE7' },
+  amber: { fill: 'rgba(245,158,11,0.2)', stroke: 'rgba(251,191,36,0.45)', text: '#FEF3C7' },
+};
+
+const ROLE_COLORS: Record<string, { dark: string; light: string }> = {
+  ocean: { dark: '#BFDBFE', light: '#3B82F6' },
+  sunset: { dark: '#FBCFE8', light: '#DB2777' },
+  forest: { dark: '#BBF7D0', light: '#16A34A' },
+  amber: { dark: '#FDE68A', light: '#D97706' },
 };
 
 function escapeXml(value: string): string {
@@ -109,13 +129,14 @@ export async function GET(request: NextRequest) {
   const theme = THEMES[themeKey] || THEMES.ocean;
   const lightTone = LIGHT_THEME_BG[themeKey] || LIGHT_THEME_BG.ocean;
   const darkCertTone = DARK_THEME_CERT[themeKey] || DARK_THEME_CERT.ocean;
+  const roleTone = ROLE_COLORS[themeKey] || ROLE_COLORS.ocean;
   const palette = mode === 'light'
     ? {
         bgStart: lightTone.start,
         bgEnd: lightTone.end,
         frameStroke: 'rgba(15,23,42,0.14)',
         name: '#0F172A',
-        role: lightTone.role,
+        role: roleTone.light,
         tagline: lightTone.tagline,
         ringOuter: lightTone.ringOuter,
         ringInner: lightTone.ringInner,
@@ -131,7 +152,7 @@ export async function GET(request: NextRequest) {
         bgEnd: '#020617',
         frameStroke: 'rgba(255,255,255,0.08)',
         name: '#FFFFFF',
-        role: theme.sub,
+        role: roleTone.dark,
         tagline: '#CBD5E1',
         ringOuter: theme.accent,
         ringInner: theme.accent,

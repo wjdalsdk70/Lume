@@ -22,6 +22,7 @@ const THEMES: Record<string, { accent: string; panel: string; panelStroke: strin
   ocean: { accent: '#67E8F9', panel: 'rgba(15,23,42,0.65)', panelStroke: 'rgba(103,232,249,0.22)', rowFill: 'rgba(2,6,23,0.45)', rowStroke: 'rgba(255,255,255,0.08)' },
   sunset: { accent: '#FB7185', panel: 'rgba(45,19,44,0.65)', panelStroke: 'rgba(251,113,133,0.24)', rowFill: 'rgba(30,10,20,0.45)', rowStroke: 'rgba(255,200,200,0.10)' },
   forest: { accent: '#34D399', panel: 'rgba(5,46,43,0.65)', panelStroke: 'rgba(52,211,153,0.24)', rowFill: 'rgba(3,24,20,0.45)', rowStroke: 'rgba(187,247,208,0.10)' },
+  amber: { accent: '#FBBF24', panel: 'rgba(42,26,5,0.7)', panelStroke: 'rgba(251,191,36,0.25)', rowFill: 'rgba(24,16,5,0.5)', rowStroke: 'rgba(253,230,138,0.12)' },
 };
 
 async function toDataUri(imageUrl: string): Promise<string> {

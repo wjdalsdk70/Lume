@@ -24,6 +24,7 @@ const THEMES: Record<string, { darkStart: string; darkEnd: string; accent: strin
   ocean: { darkStart: '#0B1026', darkEnd: '#020617', accent: '#67E8F9', lightStart: '#E0F2FE', lightEnd: '#F8FAFC' },
   sunset: { darkStart: '#2D132C', darkEnd: '#120E1A', accent: '#FB7185', lightStart: '#FCE7F3', lightEnd: '#FFF1F2' },
   forest: { darkStart: '#052E2B', darkEnd: '#021A18', accent: '#34D399', lightStart: '#DCFCE7', lightEnd: '#F0FDF4' },
+  amber: { darkStart: '#2A1A05', darkEnd: '#1A1205', accent: '#FBBF24', lightStart: '#FEF3C7', lightEnd: '#FFFBEB' },
 };
 
 function parseProjects(input: string): ProjectRow[] {

@@ -2,18 +2,20 @@
 
 import { useMemo, useState } from 'react';
 
-type ThemeKey = 'ocean' | 'sunset' | 'forest';
+type ThemeKey = 'ocean' | 'sunset' | 'forest' | 'amber';
 type CardMode = 'dark' | 'light';
 
 const themeOptions: Array<{ key: ThemeKey; label: string }> = [
   { key: 'ocean', label: 'Ocean' },
   { key: 'sunset', label: 'Sunset' },
   { key: 'forest', label: 'Forest' },
+  { key: 'amber', label: 'Amber' },
 ];
 const PROJECT_THEME_TONE: Record<ThemeKey, { darkTitle: string; lightTitle: string; darkPanel: string; lightPanel: string }> = {
   ocean: { darkTitle: 'text-cyan-200/80', lightTitle: 'text-cyan-700', darkPanel: 'bg-slate-900/50', lightPanel: 'bg-slate-100/90' },
   sunset: { darkTitle: 'text-rose-300/80', lightTitle: 'text-rose-700', darkPanel: 'bg-rose-950/30', lightPanel: 'bg-rose-50/90' },
   forest: { darkTitle: 'text-emerald-300/80', lightTitle: 'text-emerald-700', darkPanel: 'bg-emerald-950/30', lightPanel: 'bg-emerald-50/90' },
+  amber: { darkTitle: 'text-amber-300/80', lightTitle: 'text-amber-700', darkPanel: 'bg-amber-950/20', lightPanel: 'bg-amber-50/90' },
 };
 const FIXED_BASE_URL = 'https://lume-self.vercel.app';
 
