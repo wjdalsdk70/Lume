@@ -145,14 +145,25 @@ export default function Home() {
   }, [badgeDiff, badgeRank, badgeRouteId, badgeTop, githubUsername, rankScore, rankTier]);
 
   const githubReadmeSnippet = useMemo(() => {
-    const previewImageUrl = `${FIXED_BASE_URL}${previewPath}`;
+    const profileCardUrl = `${FIXED_BASE_URL}${cardPath}`;
+    const rankBadgeUrl = externalBadgeUrl.trim() || `https://www.git-ranker.com/api/v1/badges/${encodeURIComponent(badgeRouteId.trim())}`;
+    const projectsCardUrl = `${FIXED_BASE_URL}/api/projects-card?${new URLSearchParams({ projects: projectRowsInput }).toString()}`;
 
     return [
       '<p align="center">',
-      `  <img src="${previewImageUrl}" alt="${name} README Preview Card" />`,
+      `  <img src="${profileCardUrl}" alt="${name} README Card" />`,
+      '</p>',
+      '',
+      '<p align="center">',
+      `  <a href="https://www.git-ranker.com"><img src="${rankBadgeUrl}" alt="Git Rank Badge" /></a>`,
+      ...(baekjoonCardUrl ? [`  <img src="${baekjoonCardUrl}" alt="${baekjoonId} solved.ac profile" />`] : []),
+      '</p>',
+      '',
+      '<p align="center">',
+      `  <img src="${projectsCardUrl}" alt="${name} Projects Card" />`,
       '</p>',
     ].join('\n');
-  }, [name, previewPath]);
+  }, [baekjoonCardUrl, baekjoonId, badgeRouteId, cardPath, externalBadgeUrl, name, projectRowsInput]);
 
   async function downloadPreviewImage(format: 'svg' | 'png') {
     setDownloadingFormat(format);
