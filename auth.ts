@@ -15,11 +15,15 @@ export const authOptions: NextAuthOptions = {
       if (profile && typeof profile === 'object' && 'login' in profile) {
         token.username = String(profile.login);
       }
+      if (profile && typeof profile === 'object' && 'node_id' in profile) {
+        token.nodeId = String(profile.node_id);
+      }
       return token;
     },
     session({ session, token }) {
       if (session.user) {
         session.user.username = typeof token.username === 'string' ? token.username : undefined;
+        session.user.nodeId = typeof token.nodeId === 'string' ? token.nodeId : undefined;
       }
       return session;
     },

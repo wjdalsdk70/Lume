@@ -134,7 +134,6 @@ export async function GET(request: NextRequest) {
     ? {
         bgStart: lightTone.start,
         bgEnd: lightTone.end,
-        frameStroke: 'rgba(15,23,42,0.14)',
         name: '#0F172A',
         role: roleTone.light,
         tagline: lightTone.tagline,
@@ -150,7 +149,6 @@ export async function GET(request: NextRequest) {
     : {
         bgStart: theme.bg,
         bgEnd: '#020617',
-        frameStroke: 'rgba(255,255,255,0.08)',
         name: '#FFFFFF',
         role: roleTone.dark,
         tagline: '#CBD5E1',
@@ -211,7 +209,6 @@ export async function GET(request: NextRequest) {
     </defs>
 
     <rect width="1024" height="${cardHeight}" rx="24" fill="url(#bg)" />
-    <rect x="16" y="16" width="992" height="${cardHeight - 32}" rx="18" fill="none" stroke="${palette.frameStroke}" />
 
     <circle cx="900" cy="100" r="56" fill="none" stroke="url(#ring)" stroke-width="8" opacity="0.8" />
     <circle cx="900" cy="100" r="24" fill="${palette.ringInner}" opacity="0.9" />

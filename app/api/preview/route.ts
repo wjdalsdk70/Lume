@@ -46,6 +46,7 @@ export async function GET(request: NextRequest) {
   const tagline = searchParams.get('tagline') || 'Designing clean UX and robust web apps.';
   const skills = clampText(searchParams.get('skills') || 'TypeScript,React,Next.js,Tailwind', 180);
   const certs = clampText(searchParams.get('certs') || '', 240);
+  const ui = searchParams.get('ui') === 'light' ? 'light' : 'dark';
   const mode = searchParams.get('mode') === 'light' ? 'light' : 'dark';
   const theme = clampText(searchParams.get('theme') || 'ocean', 12);
 
@@ -90,7 +91,17 @@ export async function GET(request: NextRequest) {
     ? `${origin}/api/image-proxy?${new URLSearchParams({ src: baekjoonUrl }).toString()}`
     : '';
   const cardHref = await toDataUri(cardUrl).catch(() => cardUrl);
-  const tone = THEMES[theme] || THEMES.ocean;
+  const baseTone = THEMES[theme] || THEMES.ocean;
+  const isUiLightCardDark = ui === 'light' && mode === 'dark';
+  const tone = isUiLightCardDark
+    ? {
+        accent: '#CBD5E1',
+        panel: '#0F172A',
+        panelStroke: 'rgba(148,163,184,0.4)',
+        rowFill: '#020617',
+        rowStroke: 'rgba(71,85,105,0.7)',
+      }
+    : baseTone;
 
   const hasBaekjoon = Boolean(baekjoonUrl);
   const certCount = certs

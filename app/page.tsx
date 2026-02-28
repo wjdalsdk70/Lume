@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState } from 'react';
 
 type ThemeKey = 'ocean' | 'sunset' | 'forest' | 'amber';
 type CardMode = 'dark' | 'light';
+type UiMode = 'dark' | 'light';
 
 const themeOptions: Array<{ key: ThemeKey; label: string }> = [
   { key: 'ocean', label: 'Ocean' },
@@ -39,9 +40,34 @@ function parseProjectRows(input: string): ProjectRow[] {
     .slice(0, 8);
 }
 
+function normalizeBaekjoonId(raw: string): string {
+  const trimmed = raw.trim();
+  if (!trimmed) return '';
+
+  let candidate = trimmed;
+  try {
+    const decoded = decodeURIComponent(trimmed);
+    const url = new URL(decoded);
+    const boj = url.searchParams.get('boj');
+    if (boj) candidate = boj;
+    else {
+      const parts = url.pathname.split('/').filter(Boolean);
+      candidate = parts[parts.length - 1] || '';
+    }
+  } catch {
+    const match = trimmed.match(/[?&]boj=([^&]+)/);
+    if (match?.[1]) {
+      candidate = decodeURIComponent(match[1]);
+    }
+  }
+
+  return candidate.replace(/[^a-zA-Z0-9_]/g, '');
+}
+
 export default function Home() {
   const { data: session, status } = useSession();
-  const [cardMode, setCardMode] = useState<CardMode>('dark');
+  const [uiMode, setUiMode] = useState<UiMode>('light');
+  const cardMode: CardMode = uiMode;
   const [name, setName] = useState('Minty Kim');
   const [role, setRole] = useState('Frontend Engineer');
   const [tagline, setTagline] = useState('Designing clean UX and robust web apps.');
@@ -49,15 +75,14 @@ export default function Home() {
   const [theme, setTheme] = useState<ThemeKey>('ocean');
 
   const [githubUsername, setGithubUsername] = useState('mintydev');
-  const [rankTier, setRankTier] = useState('GOLD');
-  const [rankScore, setRankScore] = useState('1580');
-  const [badgeRank, setBadgeRank] = useState('412');
-  const [badgeTop, setBadgeTop] = useState('12');
-  const [badgeDiff, setBadgeDiff] = useState('+42');
+  const [rankTier] = useState('GOLD');
+  const [rankScore] = useState('1580');
+  const [badgeRank] = useState('412');
+  const [badgeTop] = useState('12');
+  const [badgeDiff] = useState('+42');
   const [externalBadgeUrl, setExternalBadgeUrl] = useState(
     'https://www.git-ranker.com/api/v1/badges/MDQ6VXNlcjQ4ODMwNTA5',
   );
-  const [badgeRouteId, setBadgeRouteId] = useState('MDQ6VXNlcjQ4ODMwNTA5');
   const [baekjoonId, setBaekjoonId] = useState('wjdalsdk70');
 
   const [certBadgesInput, setCertBadgesInput] = useState('AWS SAA,SQLD,정보처리기사');
@@ -107,7 +132,7 @@ export default function Home() {
   }, [badgeDiff, badgeRank, badgeTop, cardMode, githubUsername, rankScore, rankTier]);
 
   const baekjoonCardUrl = useMemo(() => {
-    const trimmed = baekjoonId.trim();
+    const trimmed = normalizeBaekjoonId(baekjoonId);
     if (!trimmed) return '';
     const params = new URLSearchParams({ boj: trimmed });
     return `https://mazassumnida.wtf/api/v2/generate_badge?${params.toString()}`;
@@ -123,6 +148,7 @@ export default function Home() {
       skills,
       certs: certBadgesInput,
       projects: projectRowsInput,
+      ui: uiMode,
       mode: cardMode,
       theme,
       username: githubUsername,
@@ -153,24 +179,13 @@ export default function Home() {
     skills,
     tagline,
     theme,
+    uiMode,
   ]);
 
-  const directBadgePath = useMemo(() => {
-    const params = new URLSearchParams({
-      username: githubUsername,
-      tier: rankTier,
-      mode: cardMode,
-      score: rankScore,
-      rank: badgeRank,
-      top: badgeTop,
-      diff: badgeDiff,
-    });
-    return `/api/v1/badges/${encodeURIComponent(badgeRouteId.trim() || githubUsername)}?${params.toString()}`;
-  }, [badgeDiff, badgeRank, badgeRouteId, badgeTop, cardMode, githubUsername, rankScore, rankTier]);
-
   const githubReadmeSnippet = useMemo(() => {
+    const resolvedBadgeRouteId = session?.user?.nodeId || 'MDQ6VXNlcjQ4ODMwNTA5';
     const profileCardUrl = `${FIXED_BASE_URL}${cardPath}`;
-    const rankBadgeUrl = externalBadgeUrl.trim() || `https://www.git-ranker.com/api/v1/badges/${encodeURIComponent(badgeRouteId.trim())}`;
+    const rankBadgeUrl = externalBadgeUrl.trim() || `https://www.git-ranker.com/api/v1/badges/${encodeURIComponent(resolvedBadgeRouteId)}`;
     const projectsCardUrl = `${FIXED_BASE_URL}/api/projects-card?${new URLSearchParams({ projects: projectRowsInput, mode: cardMode, theme }).toString()}`;
 
     return [
@@ -187,7 +202,21 @@ export default function Home() {
       `  <img src="${projectsCardUrl}" alt="${name} Projects Card" />`,
       '</p>',
     ].join('\n');
-  }, [baekjoonCardUrl, baekjoonId, badgeRouteId, cardMode, cardPath, externalBadgeUrl, name, projectRowsInput, theme]);
+  }, [baekjoonCardUrl, baekjoonId, cardMode, cardPath, externalBadgeUrl, name, projectRowsInput, session?.user?.nodeId, theme]);
+
+  const directBadgePath = useMemo(() => {
+    const resolvedBadgeRouteId = session?.user?.nodeId || 'MDQ6VXNlcjQ4ODMwNTA5';
+    const params = new URLSearchParams({
+      username: githubUsername,
+      tier: rankTier,
+      mode: cardMode,
+      score: rankScore,
+      rank: badgeRank,
+      top: badgeTop,
+      diff: badgeDiff,
+    });
+    return `/api/v1/badges/${encodeURIComponent(resolvedBadgeRouteId)}?${params.toString()}`;
+  }, [badgeDiff, badgeRank, badgeTop, cardMode, githubUsername, rankScore, rankTier, session?.user?.nodeId]);
 
   async function downloadPreviewImage(format: 'svg' | 'png') {
     setDownloadingFormat(format);
@@ -251,22 +280,24 @@ export default function Home() {
     }
   }
 
-  function openBadgeRoute() {
-    window.open(`${FIXED_BASE_URL}${directBadgePath}`, '_blank', 'noopener,noreferrer');
-  }
-
   async function copyGithubReadmeSnippet() {
     await navigator.clipboard.writeText(githubReadmeSnippet);
     setCopiedReadme(true);
     setTimeout(() => setCopiedReadme(false), 1200);
   }
 
+  function openBadgeRoute() {
+    window.open(`${FIXED_BASE_URL}${directBadgePath}`, '_blank', 'noopener,noreferrer');
+  }
+
   const isCardLight = cardMode === 'light';
+  const isUiLight = uiMode === 'light';
   const projectTone = PROJECT_THEME_TONE[theme];
   const isAuthenticated = status === 'authenticated';
   const displayName = session?.user?.name || session?.user?.username || 'GitHub User';
   const avatarUrl = session?.user?.image || '';
   const avatarInitial = (displayName || 'U').trim().charAt(0).toUpperCase();
+  const isUiLightCardDark = isUiLight && !isCardLight;
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -274,11 +305,54 @@ export default function Home() {
     }
   }, [isAuthenticated]);
 
-  const inputClass = 'rounded-xl border border-white/15 bg-slate-900/60 px-4 py-3 outline-none ring-cyan-300/50 transition focus:ring';
+  const inputClass = isUiLight
+    ? 'rounded-xl border border-slate-300 bg-white px-4 py-3 text-slate-900 outline-none ring-cyan-500/40 transition focus:ring'
+    : 'rounded-xl border border-white/15 bg-slate-900/60 px-4 py-3 text-slate-100 outline-none ring-cyan-300/50 transition focus:ring';
+  const shellClass = isUiLight
+    ? 'min-h-screen w-full bg-[radial-gradient(circle_at_20%_15%,#bae6fd_0%,#e2e8f0_48%,#f8fafc_100%)] px-4 py-4 text-slate-900 md:px-6 md:py-6'
+    : 'min-h-screen w-full bg-[radial-gradient(circle_at_20%_15%,#164e63_0%,#020617_45%,#020617_100%)] px-4 py-4 text-slate-100 md:px-6 md:py-6';
+  const headerClass = isUiLight
+    ? 'relative z-50 mx-auto mb-4 flex w-full max-w-[1500px] items-center justify-between rounded-2xl border border-slate-300 bg-white/85 px-4 py-3 backdrop-blur-lg md:mb-6 md:px-5'
+    : 'relative z-50 mx-auto mb-4 flex w-full max-w-[1500px] items-center justify-between rounded-2xl border border-white/10 bg-white/5 px-4 py-3 backdrop-blur-lg md:mb-6 md:px-5';
+  const panelClass = isUiLight
+    ? 'min-w-0 h-full rounded-3xl border border-slate-300 bg-white/90 p-6 backdrop-blur-lg md:p-7'
+    : 'min-w-0 h-full rounded-3xl border border-white/10 bg-white/5 p-6 backdrop-blur-lg md:p-7';
+  const previewPanelClass = isUiLight
+    ? 'min-w-0 h-full rounded-3xl border border-slate-300 bg-white/90 p-5 backdrop-blur-lg md:p-6 lg:flex lg:flex-col'
+    : 'min-w-0 h-full rounded-3xl border border-white/10 bg-white/5 p-5 backdrop-blur-lg md:p-6 lg:flex lg:flex-col';
+  const previewBoxClass = isUiLight
+    ? 'space-y-3 overflow-auto rounded-2xl border border-slate-300 bg-white p-3 lg:min-h-0 lg:flex-1'
+    : 'space-y-3 overflow-auto rounded-2xl border border-white/10 bg-slate-950/40 p-3 lg:min-h-0 lg:flex-1';
+  const mutedTextClass = isUiLight ? 'text-slate-600' : 'text-slate-300';
+  const outlineActionBtnClass = isUiLight
+    ? 'rounded-xl border border-slate-300 bg-white px-4 py-3 font-semibold text-slate-900 transition hover:bg-slate-100'
+    : 'rounded-xl border border-white/25 bg-slate-900/45 px-4 py-3 font-semibold text-slate-100 transition hover:bg-slate-800/70';
+  const primaryActionBtnClass = isUiLight
+    ? 'mt-3 w-full rounded-xl border border-slate-300 bg-white px-4 py-3 font-semibold text-slate-900 transition hover:bg-slate-100'
+    : 'mt-3 w-full rounded-xl bg-white px-4 py-3 font-semibold text-slate-950 transition hover:bg-slate-200';
+  const projectPanelClass = isCardLight
+    ? `border border-slate-300 ${projectTone.lightPanel}`
+    : isUiLightCardDark
+      ? 'border border-slate-700 bg-slate-900'
+      : `border border-white/10 ${projectTone.darkPanel}`;
+  const projectTitleClass = isCardLight
+    ? projectTone.lightTitle
+    : isUiLightCardDark
+      ? 'text-slate-200'
+      : projectTone.darkTitle;
+  const projectRowClass = isCardLight
+    ? 'border border-slate-300 bg-white'
+    : isUiLightCardDark
+      ? 'border border-slate-700 bg-slate-950'
+      : 'border border-white/10 bg-slate-950/45';
+  const projectNameClass = isCardLight ? 'text-slate-900' : 'text-slate-100';
+  const projectDescClass = isCardLight ? 'text-slate-700' : 'text-slate-300';
+  const projectMetaClass = isCardLight ? 'text-slate-600' : 'text-slate-400';
+  const previewImageClass = 'block h-auto w-full rounded-xl';
 
   return (
-    <main className="min-h-screen w-full bg-[radial-gradient(circle_at_20%_15%,#164e63_0%,#020617_45%,#020617_100%)] px-4 py-4 text-slate-100 md:px-6 md:py-6">
-      <header className="relative z-50 mx-auto mb-4 flex w-full max-w-[1500px] items-center justify-between rounded-2xl border border-white/10 bg-white/5 px-4 py-3 backdrop-blur-lg md:mb-6 md:px-5">
+    <main className={shellClass}>
+      <header className={headerClass}>
         <div className="flex items-center gap-3">
           <svg width="38" height="38" viewBox="0 0 38 38" xmlns="http://www.w3.org/2000/svg" aria-label="RuMe logo">
             <defs>
@@ -297,15 +371,47 @@ export default function Home() {
             <path d="M10 27V11h5.7c3.6 0 5.6 1.8 5.6 4.8 0 2-1 3.4-2.8 4.2l3.4 7h-3.8l-2.9-6.1H13V27h-3Zm3-8.8h2.3c1.8 0 2.8-.8 2.8-2.2 0-1.5-1-2.3-2.8-2.3H13v4.5Z" fill="#F8FAFC" />
             <circle cx="28.5" cy="9.5" r="2.2" fill="#E0F2FE" opacity="0.95" />
           </svg>
-          <p className="text-xl font-semibold tracking-[0.02em] text-slate-100 md:text-2xl">RuMe</p>
+          <p className={`text-xl font-semibold tracking-[0.02em] md:text-2xl ${isUiLight ? 'text-slate-900' : 'text-slate-100'}`}>RuMe</p>
         </div>
-        <div className="relative">
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setUiMode((prev) => (prev === 'dark' ? 'light' : 'dark'))}
+            className={`inline-flex h-10 w-10 items-center justify-center rounded-full transition ${
+              isUiLight
+                ? 'text-slate-900 hover:text-slate-700'
+                : 'text-slate-100 hover:text-white'
+            }`}
+            aria-label={isUiLight ? 'Current mode: light. Click to switch to dark mode' : 'Current mode: dark. Click to switch to light mode'}
+            title={isUiLight ? 'Light mode (click to switch)' : 'Dark mode (click to switch)'}
+          >
+            {isUiLight ? (
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                <circle cx="12" cy="12" r="4.6" fill="currentColor" />
+                <path
+                  d="M12 1.8v2.9M12 19.3v2.9M22.2 12h-2.9M4.7 12H1.8M19.2 4.8l-2.1 2.1M7 17l-2.2 2.2M19.2 19.2 17 17M7 7 4.8 4.8"
+                  stroke="currentColor"
+                  strokeWidth="2.2"
+                  strokeLinecap="round"
+                />
+              </svg>
+            ) : (
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                <path
+                  d="M20.2 14.6A8.8 8.8 0 1 1 9.4 3.8a7.3 7.3 0 1 0 10.8 10.8Z"
+                  fill="currentColor"
+                  className="drop-shadow-[0_0_2px_rgba(15,23,42,0.35)]"
+                />
+              </svg>
+            )}
+          </button>
+          <div className="relative">
           {isAuthenticated ? (
             <>
               <button
                 type="button"
                 onClick={() => setProfileMenuOpen((prev) => !prev)}
-                className="h-11 w-11 overflow-hidden rounded-full border border-white/30 bg-slate-900/70 shadow-lg"
+                className={`h-11 w-11 overflow-hidden rounded-full shadow-lg ${isUiLight ? 'border border-slate-300 bg-white' : 'border border-white/30 bg-slate-900/70'}`}
                 aria-label="Open profile menu"
               >
                 {avatarUrl ? (
@@ -316,12 +422,16 @@ export default function Home() {
                 )}
               </button>
               {profileMenuOpen ? (
-                <div className="fixed right-4 top-16 z-[9999] w-52 rounded-xl border border-white/20 bg-slate-950/90 p-2 shadow-xl backdrop-blur-md md:right-6 md:top-20">
-                  <p className="px-2 py-1 text-xs text-slate-300">{displayName}</p>
+                <div className={`fixed right-4 top-16 z-[9999] w-52 rounded-xl p-2 shadow-xl backdrop-blur-md md:right-6 md:top-20 ${
+                  isUiLight ? 'border border-slate-300 bg-white/95' : 'border border-white/20 bg-slate-950/90'
+                }`}>
+                  <p className={`px-2 py-1 text-xs ${isUiLight ? 'text-slate-600' : 'text-slate-300'}`}>{displayName}</p>
                   <button
                     type="button"
                     onClick={() => signOut({ callbackUrl: '/' })}
-                    className="mt-1 w-full rounded-lg px-3 py-2 text-left text-sm text-rose-200 transition hover:bg-rose-400/10"
+                    className={`mt-1 w-full rounded-lg px-3 py-2 text-left text-sm transition ${
+                      isUiLight ? 'text-rose-600 hover:bg-rose-100' : 'text-rose-200 hover:bg-rose-400/10'
+                    }`}
                   >
                     로그아웃
                   </button>
@@ -332,42 +442,24 @@ export default function Home() {
             <button
               type="button"
               onClick={() => signIn('github')}
-              className="rounded-lg bg-cyan-300 px-3 py-1.5 text-sm font-semibold text-slate-950 transition hover:bg-cyan-200"
+              className={`rounded-lg px-3 py-1.5 text-sm font-semibold transition ${
+                isUiLight ? 'bg-cyan-600 text-white hover:bg-cyan-500' : 'bg-cyan-300 text-slate-950 hover:bg-cyan-200'
+              }`}
             >
               GitHub 로그인
             </button>
           )}
         </div>
+        </div>
       </header>
 
       <div className="mx-auto grid w-full max-w-[1500px] gap-4 md:gap-6 lg:grid-cols-[0.9fr_1.1fr]">
-        <section className="min-w-0 h-full rounded-3xl border border-white/10 bg-white/5 p-6 backdrop-blur-lg md:p-7">
-          <p className="mb-3 inline-flex rounded-full border border-cyan-300/35 bg-cyan-300/10 px-3 py-1 text-xs tracking-[0.18em] text-cyan-200 uppercase">
+        <section className={panelClass}>
+          <p className="mb-3 inline-flex rounded-full border border-slate-300 bg-white/90 px-2 py-1 text-xs tracking-[0.12em] text-slate-900 uppercase">
             README STYLER
           </p>
-          <h1 className="mb-2 text-3xl font-bold tracking-tight md:text-4xl">GitHub README 카드 빌더</h1>
-          <p className="mb-6 text-slate-300">프로필 카드 + 배지 + 프로젝트 표를 한 번에 생성합니다.</p>
-
-          <div className="mb-4 inline-flex rounded-xl border border-cyan-300/40 bg-cyan-300/10 p-1">
-            <button
-              type="button"
-              onClick={() => setCardMode('dark')}
-              className={`rounded-lg px-3 py-1.5 text-sm font-semibold transition ${
-                cardMode === 'dark' ? 'bg-cyan-300 text-slate-950' : 'text-cyan-100'
-              }`}
-            >
-              Dark
-            </button>
-            <button
-              type="button"
-              onClick={() => setCardMode('light')}
-              className={`rounded-lg px-3 py-1.5 text-sm font-semibold transition ${
-                cardMode === 'light' ? 'bg-cyan-300 text-slate-950' : 'text-cyan-100'
-              }`}
-            >
-              Light
-            </button>
-          </div>
+          <h1 className={`mb-2 text-3xl font-bold tracking-tight md:text-4xl ${isUiLight ? 'text-slate-900' : 'text-slate-100'}`}>GitHub README 카드 빌더</h1>
+          <p className={`mb-6 ${mutedTextClass}`}>프로필 카드 + 배지 + 프로젝트 표를 한 번에 생성합니다.</p>
 
           <div className="grid gap-4">
             <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Name" className={inputClass} />
@@ -391,41 +483,16 @@ export default function Home() {
 
             <div className="mt-2 h-px bg-white/10" />
 
-            <div className="grid gap-3 sm:grid-cols-3">
-              <input value={githubUsername} onChange={(e) => setGithubUsername(e.target.value)} placeholder="GitHub Username" className={inputClass} />
-              <input value={rankTier} onChange={(e) => setRankTier(e.target.value.toUpperCase())} placeholder="Rank Tier (GOLD)" className={inputClass} />
-              <input value={rankScore} onChange={(e) => setRankScore(e.target.value)} placeholder="Rank Score (1580)" className={inputClass} />
-            </div>
-            <div className="grid gap-3 sm:grid-cols-3">
-              <input value={badgeRank} onChange={(e) => setBadgeRank(e.target.value)} placeholder="Rank (#412)" className={inputClass} />
-              <input value={badgeTop} onChange={(e) => setBadgeTop(e.target.value)} placeholder="Top Percentile (12)" className={inputClass} />
-              <input value={badgeDiff} onChange={(e) => setBadgeDiff(e.target.value)} placeholder="Diff (+42)" className={inputClass} />
-            </div>
             <input
               value={externalBadgeUrl}
               onChange={(e) => setExternalBadgeUrl(e.target.value)}
               placeholder="Git Ranker Badge URL (optional)"
               className={inputClass}
             />
-            <div className="grid gap-3 sm:grid-cols-[1fr_auto]">
-              <input
-                value={badgeRouteId}
-                onChange={(e) => setBadgeRouteId(e.target.value)}
-                placeholder="Badge Route ID (for /api/v1/badges/{id})"
-                className={inputClass}
-              />
-              <button
-                type="button"
-                onClick={openBadgeRoute}
-                className="rounded-xl border border-cyan-200/50 bg-transparent px-4 py-3 font-semibold text-cyan-100 transition hover:bg-cyan-200/10"
-              >
-                Open Badge Route
-              </button>
-            </div>
             <input
               value={baekjoonId}
-              onChange={(e) => setBaekjoonId(e.target.value)}
-              placeholder="Baekjoon ID (optional)"
+              onChange={(e) => setBaekjoonId(normalizeBaekjoonId(e.target.value))}
+              placeholder="Baekjoon ID"
               className={inputClass}
             />
 
@@ -440,38 +507,41 @@ export default function Home() {
           </div>
         </section>
 
-        <section className="min-w-0 h-full rounded-3xl border border-white/10 bg-white/5 p-5 backdrop-blur-lg md:p-6 lg:flex lg:flex-col">
-          <p className="mb-2 text-xs uppercase tracking-[0.15em] text-cyan-200/80">Live Preview</p>
-          <div className="space-y-3 overflow-auto rounded-2xl border border-white/10 bg-slate-950/40 p-3 lg:min-h-0 lg:flex-1">
+        <section className={previewPanelClass}>
+          <p className="mb-3 inline-flex rounded-full border border-slate-300 bg-white/90 px-2 py-1 text-xs tracking-[0.12em] text-slate-900 uppercase">
+            Live Preview
+          </p>
+          <div className={previewBoxClass}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={cardPath} alt="README Card Preview" className="block h-auto w-full rounded-xl" onLoad={() => setPreviewFailed(false)} onError={() => setPreviewFailed(true)} />
+            <img src={cardPath} alt="README Card Preview" className={previewImageClass} onLoad={() => setPreviewFailed(false)} onError={() => setPreviewFailed(true)} />
             <div className="grid gap-3 md:grid-cols-2">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={externalBadgeUrl.trim() || badgePath}
                 alt="Rank Badge Preview"
-                className="block h-auto w-full rounded-xl"
+                className={previewImageClass}
                 onError={() => setPreviewFailed(true)}
               />
               {baekjoonCardUrl ? (
                 // eslint-disable-next-line @next/next/no-img-element
-                <img src={baekjoonCardUrl} alt="Baekjoon Card Preview" className="block h-auto w-full rounded-xl bg-white" onError={() => setPreviewFailed(true)} />
+                <img src={baekjoonCardUrl} alt="Baekjoon Card Preview" className="block h-auto w-full rounded-xl" onError={() => setPreviewFailed(true)} />
               ) : null}
             </div>
             <div
-              className={`rounded-xl p-4 ${
-                isCardLight
-                  ? `border border-slate-300 ${projectTone.lightPanel}`
-                  : `border border-white/10 ${projectTone.darkPanel}`
-              }`}
+              className={`rounded-xl p-4 ${projectPanelClass}`}
+              style={isUiLightCardDark ? { backgroundColor: '#0f172a', borderColor: '#334155' } : undefined}
             >
-              <p className={`mb-3 text-xs uppercase tracking-[0.14em] ${isCardLight ? projectTone.lightTitle : projectTone.darkTitle}`}>Projects</p>
+              <p className={`mb-3 text-xs uppercase tracking-[0.14em] ${projectTitleClass}`}>Projects</p>
               <div className="space-y-2">
                 {projectRows.map((project, index) => (
-                  <div key={`${project.name}-${index}`} className={`rounded-lg px-3 py-2 ${isCardLight ? 'border border-slate-300 bg-white' : 'border border-white/10 bg-slate-950/45'}`}>
-                    <p className={`text-sm font-semibold ${isCardLight ? 'text-slate-900' : 'text-slate-100'}`}>{project.name}</p>
-                    <p className={`text-xs ${isCardLight ? 'text-slate-700' : 'text-slate-300'}`}>{project.description}</p>
-                    <p className={`mt-1 text-[11px] ${isCardLight ? 'text-slate-600' : 'text-slate-400'}`}>
+                  <div
+                    key={`${project.name}-${index}`}
+                    className={`rounded-lg px-3 py-2 ${projectRowClass}`}
+                    style={isUiLightCardDark ? { backgroundColor: '#020617', borderColor: '#334155' } : undefined}
+                  >
+                    <p className={`text-sm font-semibold ${projectNameClass}`}>{project.name}</p>
+                    <p className={`text-xs ${projectDescClass}`}>{project.description}</p>
+                    <p className={`mt-1 text-[11px] ${projectMetaClass}`}>
                       {project.period} | {project.stack}
                     </p>
                   </div>
@@ -484,23 +554,32 @@ export default function Home() {
           <div className="mt-4 grid gap-3 sm:grid-cols-2">
             <button
               onClick={() => downloadPreviewImage('svg')}
-              className="w-full rounded-xl border border-cyan-200/50 bg-transparent px-4 py-3 font-semibold text-cyan-100 transition hover:bg-cyan-200/10"
+              className={`w-full ${outlineActionBtnClass}`}
             >
               {downloadingFormat === 'svg' ? 'Downloading SVG...' : 'Download SVG'}
             </button>
             <button
               onClick={() => downloadPreviewImage('png')}
-              className="w-full rounded-xl border border-cyan-200/50 bg-transparent px-4 py-3 font-semibold text-cyan-100 transition hover:bg-cyan-200/10"
+              className={`w-full ${outlineActionBtnClass}`}
             >
               {downloadingFormat === 'png' ? 'Downloading PNG...' : 'Download PNG'}
             </button>
           </div>
-          <button
-            onClick={copyGithubReadmeSnippet}
-            className="mt-3 w-full rounded-xl bg-cyan-300 px-4 py-3 font-semibold text-slate-950 transition hover:bg-cyan-200"
-          >
-            {copiedReadme ? 'README Copied' : 'Copy GitHub README Snippet'}
-          </button>
+          <div className="mt-3 grid gap-3 sm:grid-cols-2">
+            <button
+              type="button"
+              onClick={openBadgeRoute}
+              className={`w-full ${outlineActionBtnClass}`}
+            >
+              Open Badge Route
+            </button>
+            <button
+              onClick={copyGithubReadmeSnippet}
+              className={`w-full ${primaryActionBtnClass.replace('mt-3 ', '')}`}
+            >
+              {copiedReadme ? 'README Copied' : 'Copy GitHub README Snippet'}
+            </button>
+          </div>
         </section>
       </div>
     </main>
