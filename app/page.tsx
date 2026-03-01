@@ -225,8 +225,8 @@ export default function Home() {
   const [theme, setTheme] = useState<ThemeKey>('ocean');
 
   const [githubUsername, setGithubUsername] = useState('mintydev');
-  const [externalBadgeUrl, setExternalBadgeUrl] = useState('');
-  const [baekjoonId, setBaekjoonId] = useState('');
+  const [externalBadgeUrl, setExternalBadgeUrl] = useState('https://www.git-ranker.com/api/v1/badges/MDQ6VXNlcjQ4ODMwNTA5');
+  const [baekjoonId, setBaekjoonId] = useState('wjdalsdk70');
 
   const [projectRowsInput, setProjectRowsInput] = useState(
     'README Styler|GitHub README 카드 생성 서비스|2026.02 - 진행중|Next.js,TypeScript,Tailwind|github.com/mintydev/readme-styler|readme-styler.vercel.app\nPortfolio 2.0|개인 포트폴리오 리뉴얼|2025.11 - 2026.01|React,Vite,Firebase|github.com/mintydev/portfolio-2|minty.dev',
@@ -477,6 +477,7 @@ export default function Home() {
     ? 'border border-slate-300 bg-white text-slate-700 hover:bg-slate-100'
     : 'border border-white/20 bg-white/10 text-slate-100 hover:bg-white/20';
   const fieldLabelClass = isUiLight ? 'mb-1 text-xs font-semibold text-slate-700' : 'mb-1 text-xs font-semibold text-slate-300';
+  const fieldTitleRowClass = 'mb-1 flex items-center justify-between gap-2';
   const fieldHelpClass = isUiLight ? 'mb-2 text-[11px] text-slate-500' : 'mb-2 text-[11px] text-slate-400';
   const sectionDividerClass = isUiLight ? 'border-slate-300/80' : 'border-white/10';
   const themeTabBaseClass = 'rounded-lg px-3 py-1.5 text-sm font-semibold transition';
@@ -498,9 +499,9 @@ export default function Home() {
     : 'border border-white/20 bg-slate-900/40 text-slate-200 hover:bg-slate-800/70';
   const previewImageClass = 'block h-auto w-full rounded-xl';
   const singleBadgeClass = 'block h-[156px] w-full max-w-[560px] rounded-xl object-contain';
-  const optionalFieldCtaClass = isUiLight
-    ? 'mt-1 inline-flex items-center rounded-md border border-slate-300 bg-white px-2 py-1 text-[11px] font-semibold text-slate-700 hover:bg-slate-100'
-    : 'mt-1 inline-flex items-center rounded-md border border-white/20 bg-slate-900/40 px-2 py-1 text-[11px] font-semibold text-slate-200 hover:bg-slate-800/70';
+  const fieldInlineLinkClass = isUiLight
+    ? 'inline-flex items-center rounded-md border border-slate-300 bg-white px-2 py-1 text-[11px] font-semibold text-slate-700 hover:bg-slate-100'
+    : 'inline-flex items-center rounded-md border border-white/20 bg-slate-900/40 px-2 py-1 text-[11px] font-semibold text-slate-200 hover:bg-slate-800/70';
   const selectedSkillChipClass = isUiLight
     ? 'inline-flex items-center gap-1 rounded-full border border-slate-300 bg-white px-3 py-1 text-xs font-medium text-slate-800'
     : 'inline-flex items-center gap-1 rounded-full border border-white/25 bg-slate-900/60 px-3 py-1 text-xs font-medium text-slate-100';
@@ -698,7 +699,12 @@ export default function Home() {
               </div>
             </label>
             <label className={`block border-t pt-4 ${sectionDividerClass}`}>
-              <p className={fieldLabelClass}>Git Ranker 배지 URL (선택)</p>
+              <div className={fieldTitleRowClass}>
+                <p className={fieldLabelClass}>Git Ranker 배지 URL (선택)</p>
+                <a href="https://www.git-ranker.com" target="_blank" rel="noreferrer" className={fieldInlineLinkClass}>
+                  Git Ranker 사이트 이동
+                </a>
+              </div>
               <p className={fieldHelpClass}>URL을 입력하면 배지를 표시합니다. 비우면 배지를 숨깁니다.</p>
               <input
                 value={externalBadgeUrl}
@@ -706,14 +712,14 @@ export default function Home() {
                 placeholder="Git Ranker Badge URL (optional)"
                 className={inputClass}
               />
-              {!hasRankBadge ? (
-                <a href="https://www.git-ranker.com" target="_blank" rel="noreferrer" className={optionalFieldCtaClass}>
-                  Git Ranker 사이트 이동
-                </a>
-              ) : null}
             </label>
             <label className="block">
-              <p className={fieldLabelClass}>백준 ID (선택)</p>
+              <div className={fieldTitleRowClass}>
+                <p className={fieldLabelClass}>백준 ID (선택)</p>
+                <a href="https://solved.ac" target="_blank" rel="noreferrer" className={fieldInlineLinkClass}>
+                  solved.ac 사이트 이동
+                </a>
+              </div>
               <p className={fieldHelpClass}>solved.ac/백준 카드에 사용할 본인 ID를 입력하세요.</p>
               <input
                 value={baekjoonId}
@@ -721,11 +727,6 @@ export default function Home() {
                 placeholder="Baekjoon ID"
                 className={inputClass}
               />
-              {!hasBaekjoonBadge ? (
-                <a href="https://solved.ac" target="_blank" rel="noreferrer" className={optionalFieldCtaClass}>
-                  solved.ac 사이트 이동
-                </a>
-              ) : null}
             </label>
 
             <label className={`block border-t pt-4 ${sectionDividerClass}`}>

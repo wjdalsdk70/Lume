@@ -10,7 +10,7 @@ const FALLBACK = {
   tagline: 'Designing clean UX and robust web apps.',
   skills: 'TypeScript,React,Next.js,Tailwind',
   theme: 'ocean',
-  externalBadgeUrl: '',
+  externalBadgeUrl: 'https://www.git-ranker.com/api/v1/badges/MDQ6VXNlcjQ4ODMwNTA5',
   baekjoonId: 'wjdalsdk70',
   certBadgesInput: 'AWS SAA,SQLD,정보처리기사',
   projectRowsInput:
