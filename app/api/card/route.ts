@@ -1,4 +1,57 @@
 import { NextRequest, NextResponse } from 'next/server';
+import {
+  siApollographql,
+  siAuth0,
+  siBootstrap,
+  siCloudflare,
+  siCss,
+  siCypress,
+  siDjango,
+  siDocker,
+  siElectron,
+  siExpress,
+  siFastapi,
+  siFigma,
+  siFirebase,
+  siFlask,
+  siGo,
+  siGraphql,
+  siGithubactions,
+  siHtml5,
+  siJavascript,
+  siJest,
+  siKotlin,
+  siKubernetes,
+  siLinux,
+  siMongodb,
+  siMysql,
+  siNetlify,
+  siNestjs,
+  siNextdotjs,
+  siNodedotjs,
+  siNginx,
+  siOpenjdk,
+  siPostman,
+  siPostgresql,
+  siPrisma,
+  siPytorch,
+  siPython,
+  siReact,
+  siRedis,
+  siRedux,
+  siRust,
+  siSass,
+  siSpringboot,
+  siSqlite,
+  siSupabase,
+  siTailwindcss,
+  siTensorflow,
+  siTypescript,
+  siVercel,
+  siVite,
+  siVitest,
+  type SimpleIcon,
+} from 'simple-icons';
 
 type Theme = {
   bg: string;
@@ -87,6 +140,59 @@ const ROLE_COLORS: Record<string, { dark: string; light: string }> = {
   amber: { dark: '#FDE68A', light: '#D97706' },
 };
 
+const SKILL_ICON_MAP: Array<{ aliases: string[]; icon: SimpleIcon }> = [
+  { aliases: ['nextjs', 'next.js', 'next'], icon: siNextdotjs },
+  { aliases: ['react', 'reactjs'], icon: siReact },
+  { aliases: ['typescript', 'ts'], icon: siTypescript },
+  { aliases: ['javascript', 'js'], icon: siJavascript },
+  { aliases: ['vite'], icon: siVite },
+  { aliases: ['tailwind', 'tailwindcss', 'tailwind css'], icon: siTailwindcss },
+  { aliases: ['html5', 'html'], icon: siHtml5 },
+  { aliases: ['css3', 'css'], icon: siCss },
+  { aliases: ['sass', 'scss'], icon: siSass },
+  { aliases: ['bootstrap'], icon: siBootstrap },
+  { aliases: ['prisma'], icon: siPrisma },
+  { aliases: ['nextauth', 'authjs', 'auth.js'], icon: siAuth0 },
+  { aliases: ['node', 'nodejs'], icon: siNodedotjs },
+  { aliases: ['express', 'expressjs'], icon: siExpress },
+  { aliases: ['nestjs', 'nest.js', 'nest'], icon: siNestjs },
+  { aliases: ['graphql', 'graph ql'], icon: siGraphql },
+  { aliases: ['apollo', 'apollo graphql', 'apollo-graphql'], icon: siApollographql },
+  { aliases: ['redux'], icon: siRedux },
+  { aliases: ['postgresql', 'postgres', 'psql'], icon: siPostgresql },
+  { aliases: ['mysql'], icon: siMysql },
+  { aliases: ['sqlite'], icon: siSqlite },
+  { aliases: ['mongodb', 'mongo'], icon: siMongodb },
+  { aliases: ['redis'], icon: siRedis },
+  { aliases: ['firebase'], icon: siFirebase },
+  { aliases: ['supabase'], icon: siSupabase },
+  { aliases: ['docker'], icon: siDocker },
+  { aliases: ['kubernetes', 'k8s'], icon: siKubernetes },
+  { aliases: ['linux'], icon: siLinux },
+  { aliases: ['nginx'], icon: siNginx },
+  { aliases: ['vercel'], icon: siVercel },
+  { aliases: ['netlify'], icon: siNetlify },
+  { aliases: ['cloudflare'], icon: siCloudflare },
+  { aliases: ['github actions', 'githubactions', 'gha'], icon: siGithubactions },
+  { aliases: ['jest'], icon: siJest },
+  { aliases: ['vitest'], icon: siVitest },
+  { aliases: ['cypress'], icon: siCypress },
+  { aliases: ['python'], icon: siPython },
+  { aliases: ['django'], icon: siDjango },
+  { aliases: ['fastapi', 'fast api'], icon: siFastapi },
+  { aliases: ['flask'], icon: siFlask },
+  { aliases: ['go', 'golang'], icon: siGo },
+  { aliases: ['rust'], icon: siRust },
+  { aliases: ['java', 'openjdk'], icon: siOpenjdk },
+  { aliases: ['kotlin'], icon: siKotlin },
+  { aliases: ['spring boot', 'springboot'], icon: siSpringboot },
+  { aliases: ['tensorflow'], icon: siTensorflow },
+  { aliases: ['pytorch', 'py torch'], icon: siPytorch },
+  { aliases: ['figma'], icon: siFigma },
+  { aliases: ['postman'], icon: siPostman },
+  { aliases: ['electron'], icon: siElectron },
+];
+
 function escapeXml(value: string): string {
   return value
     .replace(/&/g, '&amp;')
@@ -98,6 +204,26 @@ function escapeXml(value: string): string {
 
 function clampText(value: string, max = 80): string {
   return value.trim().slice(0, max);
+}
+
+function normalizeSkill(value: string): string {
+  return value.toLowerCase().replace(/[^a-z0-9.]/g, '');
+}
+
+function getSkillIcon(skill: string): SimpleIcon | null {
+  const normalized = normalizeSkill(skill);
+  const match = SKILL_ICON_MAP.find((entry) => entry.aliases.some((alias) => normalizeSkill(alias) === normalized));
+  return match?.icon || null;
+}
+
+function contrastText(hex: string): string {
+  const clean = hex.replace('#', '');
+  const color = clean.length === 3 ? clean.split('').map((c) => c + c).join('') : clean;
+  const r = parseInt(color.slice(0, 2), 16);
+  const g = parseInt(color.slice(2, 4), 16);
+  const b = parseInt(color.slice(4, 6), 16);
+  const luminance = (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255;
+  return luminance > 0.55 ? '#0F172A' : '#F8FAFC';
 }
 
 function splitMultiline(value: string): string[] {
@@ -118,8 +244,7 @@ export async function GET(request: NextRequest) {
   const skills = rawSkills
     .split(',')
     .map((skill) => clampText(skill, 22))
-    .filter(Boolean)
-    .slice(0, 5);
+    .filter(Boolean);
   const rawCerts = searchParams.get('certs') || '';
   const certs = rawCerts
     .split(',')
@@ -168,20 +293,43 @@ export async function GET(request: NextRequest) {
   const taglineBaseY = 164;
   const taglineLineHeight = 24;
   const taglineEndY = taglineBaseY + (taglineLines.length - 1) * taglineLineHeight;
-  const skillChipY = taglineEndY + 30;
-  const certChipY = skillChipY + 38;
+  const hasSkills = skills.length > 0;
+  const skillColumns = 10;
+  const skillChipSize = 42;
+  const skillChipGap = 12;
+  const skillLabelY = taglineEndY + 34;
+  const skillGridY = skillLabelY + 16;
+  const skillRows = hasSkills ? Math.ceil(skills.length / skillColumns) : 0;
+  const skillsBlockHeight = hasSkills
+    ? skillRows * skillChipSize + (skillRows - 1) * skillChipGap
+    : 0;
+  const certChipY = hasSkills ? skillGridY + skillsBlockHeight + 20 : skillLabelY + 22;
   const hasCerts = certs.length > 0;
-  const contentBottomY = hasCerts ? certChipY + 28 : skillChipY + 30;
+  const contentBottomY = hasCerts ? certChipY + 28 : hasSkills ? skillGridY + skillsBlockHeight : skillLabelY;
   const cardHeight = Math.max(320, contentBottomY + 26);
   const taglineText = taglineLines
     .map((line, index) => `<tspan x="40" dy="${index === 0 ? 0 : 24}">${escapeXml(line)}</tspan>`)
     .join('');
   const skillChips = skills
     .map((skill, index) => {
-      const x = 40 + index * 98;
+      const col = index % skillColumns;
+      const row = Math.floor(index / skillColumns);
+      const x = 40 + col * (skillChipSize + skillChipGap);
+      const y = skillGridY + row * (skillChipSize + skillChipGap);
+      const icon = getSkillIcon(skill);
+      const fallbackGlyph = (skill.trim().slice(0, 2) || '?').toUpperCase();
+      const iconBg = icon ? `#${icon.hex}` : '#334155';
+      const iconFg = icon ? contrastText(iconBg) : '#F8FAFC';
       return `
-        <rect x="${x}" y="${skillChipY}" width="90" height="30" rx="15" fill="${palette.skillFill}" stroke="${palette.skillStroke}" />
-        <text x="${x + 45}" y="${skillChipY + 20}" fill="${palette.skillText}" font-family="Arial, sans-serif" font-size="12" text-anchor="middle">${escapeXml(skill)}</text>
+        <rect x="${x}" y="${y}" width="${skillChipSize}" height="${skillChipSize}" rx="12" fill="${palette.skillFill}" stroke="${palette.skillStroke}" />
+        <rect x="${x + 6}" y="${y + 6}" width="30" height="30" rx="15" fill="${iconBg}" />
+        ${
+          icon
+            ? `<g transform="translate(${x + 9} ${y + 9}) scale(1.16)">
+        <path d="${icon.path}" fill="${iconFg}" />
+      </g>`
+            : `<text x="${x + 21}" y="${y + 26}" fill="${iconFg}" font-family="Arial, sans-serif" font-size="10" font-weight="700" text-anchor="middle">${escapeXml(fallbackGlyph)}</text>`
+        }
       `;
     })
     .join('');
@@ -217,6 +365,11 @@ export async function GET(request: NextRequest) {
     <text x="40" y="130" fill="${palette.role}" font-family="Arial, sans-serif" font-size="28" font-weight="600">${safeRole}</text>
     <text x="40" y="164" fill="${palette.tagline}" font-family="Arial, sans-serif" font-size="20">${taglineText}</text>
 
+    ${
+      hasSkills
+        ? `<text x="40" y="${skillLabelY}" fill="${palette.skillText}" fill-opacity="0.9" font-family="Arial, sans-serif" font-size="13" letter-spacing="1.6">TECH STACK</text>`
+        : ''
+    }
     ${skillChips}
     ${certChips}
   </svg>
