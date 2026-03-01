@@ -1,5 +1,6 @@
 'use client';
 
+import Image from 'next/image';
 import { signIn, signOut, useSession } from 'next-auth/react';
 import { useEffect, useMemo, useState } from 'react';
 
@@ -439,8 +440,8 @@ export default function Home() {
     ? 'min-h-screen w-full bg-[radial-gradient(circle_at_20%_15%,#bae6fd_0%,#e2e8f0_48%,#f8fafc_100%)] px-4 py-4 text-slate-900 md:px-6 md:py-6'
     : 'min-h-screen w-full bg-[radial-gradient(circle_at_20%_15%,#164e63_0%,#020617_45%,#020617_100%)] px-4 py-4 text-slate-100 md:px-6 md:py-6';
   const headerClass = isUiLight
-    ? 'relative z-50 mx-auto mb-4 flex w-full max-w-[1500px] items-center justify-between rounded-2xl border border-slate-300 bg-white/85 px-4 py-3 backdrop-blur-lg md:mb-6 md:px-5'
-    : 'relative z-50 mx-auto mb-4 flex w-full max-w-[1500px] items-center justify-between rounded-2xl border border-white/10 bg-white/5 px-4 py-3 backdrop-blur-lg md:mb-6 md:px-5';
+    ? 'relative z-50 mx-auto mb-2 flex w-full max-w-[1500px] items-center justify-between rounded-2xl border border-slate-300 bg-white/85 px-4 py-1 backdrop-blur-lg md:mb-3 md:px-5'
+    : 'relative z-50 mx-auto mb-2 flex w-full max-w-[1500px] items-center justify-between rounded-2xl border border-white/10 bg-white/5 px-4 py-1 backdrop-blur-lg md:mb-3 md:px-5';
   const panelClass = isUiLight
     ? 'min-w-0 h-full rounded-3xl border border-slate-300 bg-white/90 p-6 backdrop-blur-lg md:p-7'
     : 'min-w-0 h-full rounded-3xl border border-white/10 bg-white/5 p-6 backdrop-blur-lg md:p-7';
@@ -511,24 +512,8 @@ export default function Home() {
     <main className={shellClass}>
       <header className={headerClass}>
         <div className="flex items-center gap-3">
-          <svg width="38" height="38" viewBox="0 0 38 38" xmlns="http://www.w3.org/2000/svg" aria-label="RuMe logo">
-            <defs>
-              <linearGradient id="rumeLogoGrad" x1="0" y1="0" x2="1" y2="1">
-                <stop offset="0%" stopColor="#22D3EE" />
-                <stop offset="55%" stopColor="#38BDF8" />
-                <stop offset="100%" stopColor="#2563EB" />
-              </linearGradient>
-              <radialGradient id="rumeGlow" cx="50%" cy="20%" r="70%">
-                <stop offset="0%" stopColor="#FFFFFF" stopOpacity="0.55" />
-                <stop offset="100%" stopColor="#FFFFFF" stopOpacity="0" />
-              </radialGradient>
-            </defs>
-            <rect x="1" y="1" width="36" height="36" rx="12" fill="url(#rumeLogoGrad)" />
-            <rect x="1" y="1" width="36" height="36" rx="12" fill="url(#rumeGlow)" />
-            <path d="M10 27V11h5.7c3.6 0 5.6 1.8 5.6 4.8 0 2-1 3.4-2.8 4.2l3.4 7h-3.8l-2.9-6.1H13V27h-3Zm3-8.8h2.3c1.8 0 2.8-.8 2.8-2.2 0-1.5-1-2.3-2.8-2.3H13v4.5Z" fill="#F8FAFC" />
-            <circle cx="28.5" cy="9.5" r="2.2" fill="#E0F2FE" opacity="0.95" />
-          </svg>
-          <p className={`text-xl font-semibold tracking-[0.02em] md:text-2xl ${isUiLight ? 'text-slate-900' : 'text-slate-100'}`}>RuMe</p>
+          <Image src="/rume-log.png" alt="RuMe logo" width={50} height={50} className="rounded-xl object-contain" priority />
+          <p className={`pt-0.5 text-xl font-semibold leading-none tracking-[0.02em] md:text-2xl ${isUiLight ? 'text-slate-900' : 'text-slate-100'}`}>RuMe</p>
         </div>
         <div className="flex items-center gap-2">
           <button
