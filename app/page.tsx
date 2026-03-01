@@ -207,8 +207,7 @@ function parseSkills(value: string): string[] {
   return value
     .split(',')
     .map((item) => item.trim())
-    .filter(Boolean)
-    .slice(0, 5);
+    .filter(Boolean);
 }
 
 function toSkillsValue(items: string[]): string {
@@ -398,7 +397,7 @@ export default function Home() {
     setSkills((prev) => {
       const current = parseSkills(prev);
       if (current.some((item) => item.toLowerCase() === skillName.toLowerCase())) return prev;
-      return toSkillsValue([...current, skillName].slice(0, 5));
+      return toSkillsValue([...current, skillName]);
     });
   }
 
@@ -658,14 +657,13 @@ export default function Home() {
             </label>
             <label className="block">
               <p className={fieldLabelClass}>기술 스택</p>
-              <p className={fieldHelpClass}>체크박스로 선택하세요. 최대 5개까지 카드에 표시됩니다.</p>
+              <p className={fieldHelpClass}>체크박스로 선택하세요.</p>
               <div className="space-y-2">
                 <div className={`${inputClass} space-y-2`}>
                   <p className={isUiLight ? 'text-xs text-slate-600' : 'text-xs text-slate-300'}>기술 선택</p>
                   <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
                     {SKILL_OPTIONS.map((option) => {
                       const checked = selectedSkills.some((item) => item.toLowerCase() === option.toLowerCase());
-                      const disableUnchecked = !checked && selectedSkills.length >= 5;
                       return (
                         <label key={option} className={`inline-flex items-center gap-2 rounded-lg px-2 py-1 text-xs ${
                           isUiLight ? 'bg-slate-50 text-slate-700' : 'bg-slate-800/70 text-slate-200'
@@ -674,7 +672,6 @@ export default function Home() {
                             type="checkbox"
                             checked={checked}
                             onChange={() => toggleSkill(option)}
-                            disabled={disableUnchecked}
                             className="h-3.5 w-3.5"
                           />
                           <span>{option}</span>

@@ -231,14 +231,6 @@ function splitMultiline(value: string): string[] {
   return lines.length ? lines : [''];
 }
 
-function toTitleCase(value: string): string {
-  return value
-    .split(/[\s-]+/)
-    .filter(Boolean)
-    .map((word) => word.slice(0, 1).toUpperCase() + word.slice(1).toLowerCase())
-    .join(' ');
-}
-
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
 
@@ -252,8 +244,7 @@ export async function GET(request: NextRequest) {
   const skills = rawSkills
     .split(',')
     .map((skill) => clampText(skill, 22))
-    .filter(Boolean)
-    .slice(0, 5);
+    .filter(Boolean);
   const rawCerts = searchParams.get('certs') || '';
   const certs = rawCerts
     .split(',')
@@ -303,22 +294,18 @@ export async function GET(request: NextRequest) {
   const taglineLineHeight = 24;
   const taglineEndY = taglineBaseY + (taglineLines.length - 1) * taglineLineHeight;
   const hasSkills = skills.length > 0;
-  const skillColumns = 3;
-  const skillChipWidth = 180;
-  const skillChipHeight = 38;
-  const skillChipGapX = 14;
-  const skillChipGapY = 12;
+  const skillColumns = 10;
+  const skillChipSize = 42;
+  const skillChipGap = 12;
   const skillLabelY = taglineEndY + 34;
   const skillGridY = skillLabelY + 16;
   const skillRows = hasSkills ? Math.ceil(skills.length / skillColumns) : 0;
   const skillsBlockHeight = hasSkills
-    ? skillRows * skillChipHeight + (skillRows - 1) * skillChipGapY
+    ? skillRows * skillChipSize + (skillRows - 1) * skillChipGap
     : 0;
-  const skillsPanelY = skillGridY - 10;
-  const skillsPanelHeight = hasSkills ? skillsBlockHeight + 20 : 0;
-  const certChipY = hasSkills ? skillsPanelY + skillsPanelHeight + 22 : skillLabelY + 22;
+  const certChipY = hasSkills ? skillGridY + skillsBlockHeight + 20 : skillLabelY + 22;
   const hasCerts = certs.length > 0;
-  const contentBottomY = hasCerts ? certChipY + 28 : hasSkills ? skillsPanelY + skillsPanelHeight : skillLabelY;
+  const contentBottomY = hasCerts ? certChipY + 28 : hasSkills ? skillGridY + skillsBlockHeight : skillLabelY;
   const cardHeight = Math.max(320, contentBottomY + 26);
   const taglineText = taglineLines
     .map((line, index) => `<tspan x="40" dy="${index === 0 ? 0 : 24}">${escapeXml(line)}</tspan>`)
@@ -327,25 +314,22 @@ export async function GET(request: NextRequest) {
     .map((skill, index) => {
       const col = index % skillColumns;
       const row = Math.floor(index / skillColumns);
-      const x = 42 + col * (skillChipWidth + skillChipGapX);
-      const y = skillGridY + row * (skillChipHeight + skillChipGapY);
+      const x = 40 + col * (skillChipSize + skillChipGap);
+      const y = skillGridY + row * (skillChipSize + skillChipGap);
       const icon = getSkillIcon(skill);
-      const label = clampText(skill, 14);
-      const displayLabel = toTitleCase(label);
       const fallbackGlyph = (skill.trim().slice(0, 2) || '?').toUpperCase();
       const iconBg = icon ? `#${icon.hex}` : '#334155';
       const iconFg = icon ? contrastText(iconBg) : '#F8FAFC';
       return `
-        <rect x="${x}" y="${y}" width="${skillChipWidth}" height="${skillChipHeight}" rx="19" fill="${palette.skillFill}" stroke="${palette.skillStroke}" />
-        <rect x="${x + 10}" y="${y + 7}" width="24" height="24" rx="12" fill="${iconBg}" />
+        <rect x="${x}" y="${y}" width="${skillChipSize}" height="${skillChipSize}" rx="12" fill="${palette.skillFill}" stroke="${palette.skillStroke}" />
+        <rect x="${x + 6}" y="${y + 6}" width="30" height="30" rx="15" fill="${iconBg}" />
         ${
           icon
-            ? `<g transform="translate(${x + 12.5} ${y + 9.5}) scale(0.79)">
+            ? `<g transform="translate(${x + 9} ${y + 9}) scale(1.16)">
         <path d="${icon.path}" fill="${iconFg}" />
       </g>`
-            : `<text x="${x + 22}" y="${y + 23}" fill="${iconFg}" font-family="Arial, sans-serif" font-size="10" font-weight="700" text-anchor="middle">${escapeXml(fallbackGlyph)}</text>`
+            : `<text x="${x + 21}" y="${y + 26}" fill="${iconFg}" font-family="Arial, sans-serif" font-size="10" font-weight="700" text-anchor="middle">${escapeXml(fallbackGlyph)}</text>`
         }
-        <text x="${x + 44}" y="${y + 24}" fill="${palette.skillText}" font-family="Arial, sans-serif" font-size="13" font-weight="600">${escapeXml(displayLabel)}</text>
       `;
     })
     .join('');
